@@ -1,0 +1,1333 @@
+<title>Bússola do Avançado</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Work+Sans:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --pitch-bg:#F3FAF5;
+    --surface:#FFFFFF;
+    --surface-2:#E9F3EC;
+    --ink:#0C2A1E;
+    --ink-muted:#54695D;
+    --green:#1B5C3E;
+    --green-dark:#123D29;
+    --green-deep:#0A2318;
+    --amber:#E2932E;
+    --amber-ink:#5A380D;
+    --tag-principle:#8A5A16;
+    --line:#CFE1D5;
+    --good:#2C8C5B;
+    --danger:#C2493B;
+    --turf-1:#1E6146;
+    --turf-2:#15492F;
+    --chalk-line:#F6FFF9;
+    --shadow:0 1px 2px rgba(10,35,24,.06), 0 10px 24px rgba(10,35,24,.08);
+    color-scheme:light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --pitch-bg:#0A1B13;
+      --surface:#11251B;
+      --surface-2:#152E20;
+      --ink:#E7F3EB;
+      --ink-muted:#93AC9E;
+      --green:#3AA06B;
+      --green-dark:#1E6146;
+      --green-deep:#0A2318;
+      --amber:#EFA23D;
+      --amber-ink:#2A1A05;
+      --tag-principle:#EFA23D;
+      --line:#22402E;
+      --good:#4FBE85;
+      --danger:#E1685A;
+      --turf-1:#173726;
+      --turf-2:#10281B;
+      --chalk-line:#DDEEE3;
+      --shadow:0 1px 2px rgba(0,0,0,.35), 0 10px 24px rgba(0,0,0,.4);
+      color-scheme:dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --pitch-bg:#0A1B13;
+    --surface:#11251B;
+    --surface-2:#152E20;
+    --ink:#E7F3EB;
+    --ink-muted:#93AC9E;
+    --green:#3AA06B;
+    --green-dark:#1E6146;
+    --green-deep:#0A2318;
+    --amber:#EFA23D;
+    --amber-ink:#2A1A05;
+    --tag-principle:#EFA23D;
+    --line:#22402E;
+    --good:#4FBE85;
+    --danger:#E1685A;
+    --turf-1:#173726;
+    --turf-2:#10281B;
+    --chalk-line:#DDEEE3;
+    --shadow:0 1px 2px rgba(0,0,0,.35), 0 10px 24px rgba(0,0,0,.4);
+    color-scheme:dark;
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    background:var(--pitch-bg);
+    color:var(--ink);
+    font-family:'Work Sans', system-ui, -apple-system, sans-serif;
+    line-height:1.5;
+  }
+  h1,h2,h3{font-family:'Oswald', 'Arial Narrow', sans-serif; margin:0;}
+  p{margin:0;}
+  button{font-family:inherit;}
+  button:focus-visible, .rule-card:focus-visible{outline:2px solid var(--amber); outline-offset:2px;}
+
+  .page{
+    max-width:640px;
+    margin:0 auto;
+    padding-inline:20px;
+    padding-block:28px 48px;
+    display:flex;
+    flex-direction:column;
+    gap:32px;
+  }
+
+  /* Header */
+  .eyebrow{
+    font:600 12px 'Oswald',sans-serif;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    color:var(--green);
+  }
+  .top h1{
+    font-size:clamp(26px,7vw,34px);
+    font-weight:700;
+    color:var(--ink);
+    margin-top:6px;
+    text-wrap:balance;
+  }
+  .top .sub{
+    color:var(--ink-muted);
+    font-size:15px;
+    margin-top:6px;
+  }
+  .segmented{
+    display:inline-flex;
+    background:var(--surface-2);
+    border-radius:999px;
+    padding:4px;
+    gap:4px;
+  }
+  .seg-btn{
+    border:none;
+    background:transparent;
+    color:var(--ink-muted);
+    font:600 12px 'Oswald',sans-serif;
+    text-transform:uppercase;
+    letter-spacing:.05em;
+    padding:9px 18px;
+    border-radius:999px;
+    cursor:pointer;
+    transition:background .15s, color .15s;
+  }
+  .seg-btn.active{
+    background:var(--amber);
+    color:var(--amber-ink);
+  }
+  .top .segmented{margin-top:16px;}
+
+  /* Pitch */
+  .pitch-card{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:20px;
+    padding:16px;
+    box-shadow:var(--shadow);
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+  }
+  .pitch-card svg{width:100%;height:auto;display:block;touch-action:none;}
+  .turf-a{fill:var(--turf-1);}
+  .turf-b{fill:var(--turf-2);}
+  .pitch-outline{fill:url(#turf);stroke:var(--line);}
+  .pitch-line{stroke:var(--chalk-line);stroke-width:2;fill:none;opacity:.9;}
+  .pitch-line-fill{fill:var(--chalk-line);opacity:.9;}
+  .zone-shape{
+    fill:var(--amber);
+    opacity:.08;
+    stroke:var(--amber);
+    stroke-width:1.5;
+    stroke-opacity:.25;
+    transition:opacity .2s, stroke-opacity .2s;
+  }
+  .zone-shape.active{opacity:.22;stroke-opacity:.75;}
+  .zone-label{
+    font:600 9px 'Oswald',sans-serif;
+    letter-spacing:.05em;
+    fill:var(--ink-muted);
+    opacity:.75;
+    text-transform:uppercase;
+  }
+
+  .draggable{cursor:grab;touch-action:none;}
+  .draggable:active{cursor:grabbing;}
+
+  .marker-circle{fill:var(--surface);stroke:var(--green-deep);stroke-width:3;}
+  .marker-label{font:700 11px 'Oswald',sans-serif;fill:var(--ink);text-anchor:middle;}
+  .pulse-ring{
+    fill:none;
+    stroke:var(--amber);
+    stroke-width:2;
+    opacity:0;
+    transform-box:fill-box;
+    transform-origin:center;
+  }
+  .player-tag{
+    font:700 11px 'Oswald',sans-serif;
+    letter-spacing:.05em;
+    text-anchor:middle;
+    fill:var(--chalk-line);
+    paint-order:stroke;
+    stroke:var(--green-deep);
+    stroke-width:3px;
+    stroke-linejoin:round;
+    opacity:0;
+    transition:opacity .15s;
+  }
+  .marker.player-active .marker-circle{fill:var(--amber);stroke:var(--amber-ink);}
+  .marker.player-active .marker-label{fill:var(--amber-ink);}
+  .marker.player-active .player-tag{opacity:1;}
+  .marker.player-active .pulse-ring{opacity:1;animation:pulse 1.8s ease-out infinite;}
+  @keyframes pulse{
+    0%{transform:scale(1);opacity:.7;}
+    100%{transform:scale(1.55);opacity:0;}
+  }
+  @media (prefers-reduced-motion:reduce){
+    .marker.player-active .pulse-ring{animation:none;opacity:.35;}
+  }
+
+  .opp-circle{fill:var(--danger);stroke:var(--surface);stroke-width:2;}
+  .opp-label{font:700 8px 'Oswald',sans-serif;fill:#fff;text-anchor:middle;}
+  .sel-ring{fill:none;stroke:var(--ink);stroke-width:2;stroke-dasharray:3 3;opacity:0;}
+  .opponent.selected .sel-ring{opacity:1;}
+
+  .path-line{fill:none;stroke-width:3;stroke-linecap:round;}
+  .path-line.dashed{stroke-dasharray:7 6;}
+  .path-good{stroke:var(--good);}
+  .path-amber{stroke:var(--amber);}
+  .path-danger{stroke:var(--danger);}
+  .arrow-fill-good{fill:var(--good);}
+  .arrow-fill-amber{fill:var(--amber);}
+  .arrow-fill-danger{fill:var(--danger);}
+
+  .board-controls{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    justify-content:space-between;
+    align-items:center;
+  }
+  .opp-controls{display:flex;gap:8px;flex-wrap:wrap;}
+  .btn-ghost{
+    background:transparent;
+    border:1px solid var(--line);
+    color:var(--ink);
+    font:600 12px 'Oswald',sans-serif;
+    text-transform:uppercase;
+    letter-spacing:.04em;
+    padding:9px 16px;
+    border-radius:999px;
+    cursor:pointer;
+    transition:border-color .15s;
+  }
+  .btn-ghost:hover:not(:disabled){border-color:var(--green);}
+  .btn-ghost:disabled{opacity:.4;cursor:default;}
+
+  .board-hint{color:var(--ink-muted);font-size:13px;}
+  .pitch-caption{font-size:14px;color:var(--ink-muted);text-align:center;}
+  .legend{
+    list-style:none;margin:0;padding:0;
+    display:flex;flex-wrap:wrap;gap:8px 16px;justify-content:center;
+    font-size:12px;color:var(--ink-muted);
+    border-top:1px solid var(--line);
+    padding-top:12px;
+  }
+  .legend li{display:flex;align-items:center;gap:6px;}
+  .legend span{
+    display:inline-flex;align-items:center;justify-content:center;
+    width:22px;height:22px;border-radius:6px;
+    background:var(--surface-2);color:var(--ink);
+    font:600 11px 'Oswald',sans-serif;
+  }
+
+  /* Rules */
+  .section-head h2{font-size:20px;font-weight:600;}
+  .section-sub{color:var(--ink-muted);font-size:14px;margin-top:4px;}
+  .rule-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+    gap:12px;
+    margin-top:16px;
+  }
+  .rule-card{
+    text-align:left;
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:16px;
+    cursor:pointer;
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    color:inherit;
+    transition:border-color .15s, background .15s;
+  }
+  .rule-card:hover{border-color:var(--green);}
+  .rule-card.active{border-color:var(--amber);background:var(--surface-2);}
+  .rule-zone{
+    font:600 11px 'Oswald',sans-serif;
+    text-transform:uppercase;
+    letter-spacing:.05em;
+    color:var(--green);
+  }
+  .rule-zone--principle{color:var(--tag-principle);}
+  .rule-card h3{font:600 15px 'Work Sans',sans-serif;color:var(--ink);}
+  .rule-card p{font-size:14px;color:var(--ink-muted);line-height:1.5;}
+
+  /* Quiz */
+  .quiz-head{display:flex;flex-direction:column;gap:4px;}
+  .quiz-best{
+    align-self:flex-start;
+    background:var(--surface-2);
+    color:var(--ink-muted);
+    font-size:12px;
+    padding:4px 10px;
+    border-radius:999px;
+    margin-top:6px;
+    font-variant-numeric:tabular-nums;
+  }
+  .dots{display:flex;gap:5px;flex-wrap:wrap;margin-top:14px;}
+  .dot{width:9px;height:9px;border-radius:50%;border:2px solid var(--line);background:transparent;transition:transform .15s, border-color .15s, background .15s;}
+  .dot.current{border-color:var(--green);transform:scale(1.3);}
+  .dot.correct{background:var(--good);border-color:var(--good);}
+  .dot.wrong{background:var(--danger);border-color:var(--danger);}
+
+  .quiz-body{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:18px;
+    padding:20px;
+    box-shadow:var(--shadow);
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+    margin-top:10px;
+  }
+  .quiz-progress{
+    font:600 12px 'Oswald',sans-serif;
+    text-transform:uppercase;
+    letter-spacing:.05em;
+    color:var(--ink-muted);
+  }
+  .quiz-situation{font-size:18px;font-weight:600;color:var(--ink);text-wrap:balance;}
+  .opts{display:flex;flex-direction:column;gap:8px;}
+  .opt{
+    text-align:left;
+    padding:12px 14px;
+    border:1px solid var(--line);
+    border-radius:10px;
+    background:var(--surface);
+    color:var(--ink);
+    font-size:15px;
+    cursor:pointer;
+    transition:border-color .15s, background .15s;
+  }
+  .opt:hover:not([disabled]){border-color:var(--green);}
+  .opt.correct{border-color:var(--good);background:color-mix(in srgb, var(--good) 14%, var(--surface));}
+  .opt.wrong{border-color:var(--danger);background:color-mix(in srgb, var(--danger) 14%, var(--surface));}
+  .opt[disabled]{cursor:default;}
+  .quiz-feedback{
+    border-left:3px solid var(--green);
+    padding-left:12px;
+    display:flex;flex-direction:column;gap:4px;
+  }
+  .quiz-feedback.is-wrong{border-left-color:var(--danger);}
+  .feedback-title{
+    font:600 13px 'Oswald',sans-serif;
+    text-transform:uppercase;
+    letter-spacing:.04em;
+    color:var(--ink);
+  }
+  .quiz-feedback .exp{color:var(--ink-muted);font-size:14px;line-height:1.5;}
+  .btn-primary{
+    align-self:flex-start;
+    background:var(--green-dark);
+    color:#fff;
+    border:none;
+    padding:11px 22px;
+    border-radius:999px;
+    font:600 13px 'Oswald',sans-serif;
+    text-transform:uppercase;
+    letter-spacing:.04em;
+    cursor:pointer;
+    transition:background .15s;
+  }
+  .btn-primary:hover{background:var(--green-deep);}
+  .quiz-score{
+    font:700 44px 'Oswald',sans-serif;
+    color:var(--amber);
+    font-variant-numeric:tabular-nums;
+  }
+  .quiz-score-max{font-size:20px;color:var(--ink-muted);font-weight:600;}
+  .quiz-score-sub{color:var(--ink-muted);font-size:13px;margin-top:-6px;}
+  .quiz-tier{color:var(--ink-muted);font-size:14px;line-height:1.5;}
+  .quiz-missed{
+    background:var(--surface-2);
+    border-radius:10px;
+    padding:12px 14px;
+    font-size:14px;
+    color:var(--ink);
+  }
+  .quiz-missed p{
+    margin:0 0 8px;
+    font:600 12px 'Oswald',sans-serif;
+    text-transform:uppercase;
+    letter-spacing:.04em;
+    color:var(--ink-muted);
+  }
+  .quiz-missed ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px;}
+  .quiz-missed li strong{color:var(--ink);}
+
+  .foot{
+    text-align:center;
+    color:var(--ink-muted);
+    font-size:13px;
+    padding-top:16px;
+    border-top:1px solid var(--line);
+  }
+</style>
+
+<div class="page">
+
+  <header class="top">
+    <p class="eyebrow">Vitória de Setúbal · Sub-10 · Sistema 3-1-2</p>
+    <h1>Bússola do Avançado</h1>
+    <p class="sub">O campo, a tua posição e as decisões que já sabes tomar.</p>
+    <div class="segmented" role="group" aria-label="Lado em que jogas hoje" id="sideToggle">
+      <button type="button" class="seg-btn" data-side="esquerda">Ala esquerda</button>
+      <button type="button" class="seg-btn" data-side="direita">Ala direita</button>
+    </div>
+  </header>
+
+  <section class="pitch-card" aria-label="Formação em campo">
+    <svg id="pitchSvg" viewBox="0 0 400 620" role="img" aria-label="Campo de futebol de 7, formação 3-1-2, com jogadores e adversários arrastáveis">
+      <defs>
+        <pattern id="turf" width="40" height="40" patternUnits="userSpaceOnUse">
+          <rect width="40" height="20" class="turf-a"/>
+          <rect y="20" width="40" height="20" class="turf-b"/>
+        </pattern>
+        <marker id="arrowGood" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" class="arrow-fill-good"/>
+        </marker>
+        <marker id="arrowAmber" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" class="arrow-fill-amber"/>
+        </marker>
+        <marker id="arrowDanger" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" class="arrow-fill-danger"/>
+        </marker>
+      </defs>
+
+      <rect x="16" y="16" width="368" height="588" rx="6" class="pitch-outline" stroke-width="2"/>
+
+      <line x1="16" y1="316" x2="384" y2="316" class="pitch-line"/>
+      <circle cx="200" cy="316" r="46" class="pitch-line"/>
+      <circle cx="200" cy="316" r="2.5" class="pitch-line-fill"/>
+
+      <rect x="150" y="558" width="100" height="34" class="pitch-line"/>
+      <rect x="176" y="598" width="48" height="6" class="pitch-line"/>
+      <rect x="150" y="28" width="100" height="34" class="pitch-line"/>
+      <rect x="176" y="16" width="48" height="6" class="pitch-line"/>
+
+      <rect x="118" y="266" width="164" height="100" rx="10" class="zone-shape meio"></rect>
+      <text x="126" y="284" class="zone-label">Meio-campo</text>
+
+      <rect x="18" y="150" width="86" height="310" rx="10" class="zone-shape corredor"></rect>
+      <text x="26" y="168" class="zone-label">Corredor</text>
+
+      <rect x="296" y="150" width="86" height="310" rx="10" class="zone-shape corredor"></rect>
+      <text x="304" y="168" class="zone-label">Corredor</text>
+
+      <rect x="60" y="96" width="280" height="120" rx="10" class="zone-shape terco"></rect>
+      <text x="68" y="114" class="zone-label">Zona de finalização</text>
+
+      <g id="pathLayer"></g>
+
+      <g class="marker draggable" id="m-gr" data-kind="own" data-key="gr" transform="translate(200,565)">
+        <circle r="13" class="marker-circle"/>
+        <text class="marker-label" dy="4">GR</text>
+      </g>
+      <g class="marker draggable" id="m-dc" data-kind="own" data-key="dc" transform="translate(200,470)">
+        <circle r="13" class="marker-circle"/>
+        <text class="marker-label" dy="4">DC</text>
+      </g>
+      <g class="marker draggable" id="m-le" data-kind="own" data-key="le" transform="translate(95,440)">
+        <circle r="13" class="marker-circle"/>
+        <text class="marker-label" dy="4">LE</text>
+      </g>
+      <g class="marker draggable" id="m-ld" data-kind="own" data-key="ld" transform="translate(305,440)">
+        <circle r="13" class="marker-circle"/>
+        <text class="marker-label" dy="4">LD</text>
+      </g>
+      <g class="marker draggable" id="m-mc" data-kind="own" data-key="mc" transform="translate(200,340)">
+        <circle r="13" class="marker-circle"/>
+        <text class="marker-label" dy="4">MC</text>
+      </g>
+      <g class="marker draggable player" id="m-ae" data-kind="own" data-key="ae" transform="translate(112,190)">
+        <circle r="17" class="pulse-ring"/>
+        <circle r="13" class="marker-circle"/>
+        <text class="marker-label" dy="4">AE</text>
+        <text class="player-tag" y="-22">TU</text>
+      </g>
+      <g class="marker draggable player" id="m-ad" data-kind="own" data-key="ad" transform="translate(288,190)">
+        <circle r="17" class="pulse-ring"/>
+        <circle r="13" class="marker-circle"/>
+        <text class="marker-label" dy="4">AD</text>
+        <text class="player-tag" y="-22">TU</text>
+      </g>
+
+      <g id="opponentsLayer"></g>
+    </svg>
+
+    <p class="board-hint">Arrasta os bonecos para ajustar as posições. Adiciona adversários e escolhe Ataque ou Defesa para veres o caminho.</p>
+
+    <div class="board-controls">
+      <div class="segmented" role="group" aria-label="Modo tático" id="modeToggle">
+        <button type="button" class="seg-btn" data-mode="ataque">Ataque</button>
+        <button type="button" class="seg-btn" data-mode="defesa">Defesa</button>
+      </div>
+      <div class="opp-controls">
+        <button type="button" class="btn-ghost" id="clearPathBtn">Limpar seta</button>
+        <button type="button" class="btn-ghost" id="addOppBtn">+ Adversário</button>
+        <button type="button" class="btn-ghost" id="removeOppBtn" disabled>Remover selecionado</button>
+      </div>
+    </div>
+
+    <p class="pitch-caption" id="pathCaption" hidden></p>
+    <p class="pitch-caption" id="sideCaption"></p>
+
+    <ul class="legend">
+      <li><span>GR</span>Guarda-Redes</li>
+      <li><span>DC</span>Defesa Central</li>
+      <li><span>LE</span>Lateral Esquerdo</li>
+      <li><span>LD</span>Lateral Direito</li>
+      <li><span>MC</span>Médio Centro</li>
+      <li><span>AE</span>Avançado Esquerdo</li>
+      <li><span>AD</span>Avançado Direito</li>
+      <li><span style="background:var(--danger);color:#fff;">ADV</span>Adversário</li>
+    </ul>
+  </section>
+
+  <section class="rules">
+    <div class="section-head">
+      <h2>Regras em campo</h2>
+      <p class="section-sub">Toca num cartão para veres a zona correspondente no campo.</p>
+    </div>
+    <div class="rule-grid">
+      <button type="button" class="rule-card" data-zone="meio">
+        <span class="rule-zone">Meio-campo</span>
+        <h3>Bola alta ao meio-campo</h3>
+        <p>Domina a bola antes de decidires. Não jogues de primeira sem controlar.</p>
+      </button>
+      <button type="button" class="rule-card" data-zone="corredor">
+        <span class="rule-zone">Lançamento lateral</span>
+        <h3>Bola lançada pelo teu lateral</h3>
+        <p>Nunca de cabeça, nunca a abaixar o corpo. Domina no peito e tenta jogar com ela.</p>
+      </button>
+      <button type="button" class="rule-card" data-zone="terco">
+        <span class="rule-zone">Zona de finalização</span>
+        <h3>Sem bola, no ataque</h3>
+        <p>Procura sempre espaço livre. Um avançado parado é fácil de marcar.</p>
+      </button>
+      <button type="button" class="rule-card" data-zone="corredor">
+        <span class="rule-zone">No corredor</span>
+        <h3>Recebeste de frente para o adversário</h3>
+        <p>Vai ao 1x1. Não voltes a bola para trás, joga sempre para a frente.</p>
+      </button>
+      <button type="button" class="rule-card" data-zone="">
+        <span class="rule-zone rule-zone--principle">Princípio</span>
+        <h3>Sob pressão, sem passe claro</h3>
+        <p>Nunca te livres da bola só para te livrares dela. Joga sempre com intenção.</p>
+      </button>
+      <button type="button" class="rule-card" data-zone="">
+        <span class="rule-zone rule-zone--principle">Princípio</span>
+        <h3>Perdeste a bola no 1x1</h3>
+        <p>Sem problema nenhum. Continua a jogar e a tentar. Arriscar faz parte.</p>
+      </button>
+      <button type="button" class="rule-card" data-zone="">
+        <span class="rule-zone rule-zone--principle">Princípio</span>
+        <h3>Perdeste a bola: contra-ataque perigoso</h3>
+        <p>Persegue de imediato. Se não chegares a tempo, trava com uma falta tática, sem entrada dura.</p>
+      </button>
+      <button type="button" class="rule-card" data-zone="">
+        <span class="rule-zone rule-zone--principle">Princípio</span>
+        <h3>Antes de receberes a bola</h3>
+        <p>Olha por cima do ombro. Sabe se estás marcado antes de a bola chegar.</p>
+      </button>
+      <button type="button" class="rule-card" data-zone="">
+        <span class="rule-zone rule-zone--principle">Princípio</span>
+        <h3>Estás livre, sem marcação</h3>
+        <p>Pede a bola em voz alta e com convicção. Não esperes que o colega adivinhe.</p>
+      </button>
+      <button type="button" class="rule-card" data-zone="corredor">
+        <span class="rule-zone">Um-dois com o lateral</span>
+        <h3>Bem marcado, junto ao lateral</h3>
+        <p>Pede, protege, devolve de primeira e movimenta-te logo para espaço livre.</p>
+      </button>
+      <button type="button" class="rule-card" data-zone="">
+        <span class="rule-zone rule-zone--principle">Princípio</span>
+        <h3>Canto a favor</h3>
+        <p>Pede para bater. É uma oportunidade de criar perigo.</p>
+      </button>
+      <button type="button" class="rule-card" data-zone="terco">
+        <span class="rule-zone">Zona de finalização</span>
+        <h3>Frente ao golo, com espaço</h3>
+        <p>Bate com força e convicção. Hesitar facilita a defesa.</p>
+      </button>
+      <button type="button" class="rule-card" data-zone="">
+        <span class="rule-zone rule-zone--principle">Princípio</span>
+        <h3>A bater um penálti</h3>
+        <p>Decide o lado antes, e bate com confiança e força.</p>
+      </button>
+      <button type="button" class="rule-card" data-zone="">
+        <span class="rule-zone rule-zone--principle">Princípio</span>
+        <h3>Boca seca durante o jogo</h3>
+        <p>É desidratação. Bebe água no intervalo ou assim que possível.</p>
+      </button>
+      <button type="button" class="rule-card" data-zone="">
+        <span class="rule-zone rule-zone--principle">Princípio</span>
+        <h3>Colega reclama que não passaste</h3>
+        <p>Mantém a calma. "Não vi" ou "deixa, prometo que é para a próxima".</p>
+      </button>
+    </div>
+  </section>
+
+  <section class="quiz" aria-label="Treino de decisões">
+    <div class="quiz-head">
+      <h2>Treino de decisões</h2>
+      <p class="section-sub">15 situações de jogo. Escolhe o que farias em cada uma.</p>
+      <p class="quiz-best" id="quizBest" hidden></p>
+    </div>
+    <div class="dots" id="quizDots" aria-hidden="true"></div>
+    <div class="quiz-body" id="quizBody" aria-live="polite"></div>
+  </section>
+
+  <p class="foot">Revê antes de cada jogo. Cinco minutos chegam.</p>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ================= Side toggle ================= */
+  var sideButtons = document.querySelectorAll('#sideToggle .seg-btn');
+  var markerAE = document.getElementById('m-ae');
+  var markerAD = document.getElementById('m-ad');
+  var sideCaption = document.getElementById('sideCaption');
+  var currentSide = 'esquerda';
+
+  function setSide(side){
+    currentSide = side;
+    sideButtons.forEach(function(b){
+      var isActive = b.dataset.side === side;
+      b.classList.toggle('active', isActive);
+      b.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+    });
+    markerAE.classList.toggle('player-active', side === 'esquerda');
+    markerAD.classList.toggle('player-active', side === 'direita');
+    sideCaption.innerHTML = side === 'esquerda'
+      ? 'Hoje jogas pelo <strong>corredor esquerdo</strong>. O marcador com <strong>TU</strong> é a tua posição.'
+      : 'Hoje jogas pelo <strong>corredor direito</strong>. O marcador com <strong>TU</strong> é a tua posição.';
+    try{ localStorage.setItem('bussola-side', side); }catch(e){}
+    updatePathForMode();
+  }
+  sideButtons.forEach(function(b){
+    b.addEventListener('click', function(){ setSide(b.dataset.side); });
+  });
+
+  /* ================= Rule cards -> pitch zones ================= */
+  var zoneShapes = document.querySelectorAll('.zone-shape');
+  var ruleCards = document.querySelectorAll('.rule-card');
+
+  function setZone(zone){
+    zoneShapes.forEach(function(z){ z.classList.remove('active'); });
+    if(!zone) return;
+    document.querySelectorAll('.zone-shape.' + zone).forEach(function(z){ z.classList.add('active'); });
+  }
+
+  ruleCards.forEach(function(card){
+    card.addEventListener('click', function(){
+      var zone = card.dataset.zone;
+      var wasActive = card.classList.contains('active');
+      ruleCards.forEach(function(c){ c.classList.remove('active'); });
+      setZone(null);
+      if(!wasActive){
+        card.classList.add('active');
+        if(zone) setZone(zone);
+      }
+    });
+  });
+
+  /* ================= Tactical board ================= */
+  var svgEl = document.getElementById('pitchSvg');
+  var pathLayer = document.getElementById('pathLayer');
+  var opponentsLayer = document.getElementById('opponentsLayer');
+  var pathCaption = document.getElementById('pathCaption');
+  var modeButtons = document.querySelectorAll('#modeToggle .seg-btn');
+  var addOppBtn = document.getElementById('addOppBtn');
+  var removeOppBtn = document.getElementById('removeOppBtn');
+
+  function defaultBoard(){
+    return {
+      positions:{
+        gr:{x:200,y:565}, dc:{x:200,y:470}, le:{x:95,y:440}, ld:{x:305,y:440},
+        mc:{x:200,y:340}, ae:{x:112,y:190}, ad:{x:288,y:190}
+      },
+      opponents: [],
+      mode: null,
+      selected: null
+    };
+  }
+
+  function loadBoard(fromHot){
+    if(fromHot && fromHot.positions) return fromHot;
+    try{
+      var raw = localStorage.getItem('bussola-board');
+      if(raw){
+        var parsed = JSON.parse(raw);
+        if(parsed && parsed.positions) return parsed;
+      }
+    }catch(e){}
+    return defaultBoard();
+  }
+
+  var boardState;
+  var oppSeq = 0;
+
+  function persistBoard(){
+    try{ localStorage.setItem('bussola-board', JSON.stringify(boardState)); }catch(e){}
+    persistHot();
+  }
+
+  function toSvgPoint(evt){
+    var pt = svgEl.createSVGPoint();
+    pt.x = evt.clientX; pt.y = evt.clientY;
+    var ctm = svgEl.getScreenCTM();
+    if(!ctm) return {x:200,y:300};
+    var inv = ctm.inverse();
+    var p = pt.matrixTransform(inv);
+    return {x:p.x, y:p.y};
+  }
+
+  function clamp(v,min,max){ return Math.max(min, Math.min(max, v)); }
+
+  function setMarkerPos(kind, key, x, y){
+    x = clamp(x, 34, 366);
+    y = clamp(y, 34, 586);
+    if(kind === 'own'){
+      boardState.positions[key] = {x:x,y:y};
+      var el = document.getElementById('m-' + key);
+      if(el) el.setAttribute('transform', 'translate(' + x + ',' + y + ')');
+    }else{
+      var opp = boardState.opponents.filter(function(o){ return o.id === key; })[0];
+      if(opp){ opp.x = x; opp.y = y; }
+      var el2 = document.getElementById('opp-' + key);
+      if(el2) el2.setAttribute('transform', 'translate(' + x + ',' + y + ')');
+    }
+  }
+
+  function applyStoredPositions(){
+    Object.keys(boardState.positions).forEach(function(key){
+      var p = boardState.positions[key];
+      var el = document.getElementById('m-' + key);
+      if(el) el.setAttribute('transform', 'translate(' + p.x + ',' + p.y + ')');
+    });
+  }
+
+  function renderOpponents(){
+    opponentsLayer.innerHTML = '';
+    boardState.opponents.forEach(function(o){
+      var g = document.createElementNS('http://www.w3.org/2000/svg','g');
+      g.setAttribute('class', 'marker draggable opponent' + (boardState.selected === o.id ? ' selected' : ''));
+      g.setAttribute('id', 'opp-' + o.id);
+      g.setAttribute('data-kind', 'opp');
+      g.setAttribute('data-key', o.id);
+      g.setAttribute('transform', 'translate(' + o.x + ',' + o.y + ')');
+
+      var ring = document.createElementNS('http://www.w3.org/2000/svg','circle');
+      ring.setAttribute('r','17'); ring.setAttribute('class','sel-ring');
+
+      var circle = document.createElementNS('http://www.w3.org/2000/svg','circle');
+      circle.setAttribute('r','13'); circle.setAttribute('class','opp-circle');
+
+      var label = document.createElementNS('http://www.w3.org/2000/svg','text');
+      label.setAttribute('class','opp-label'); label.setAttribute('dy','3');
+      label.textContent = 'ADV';
+
+      g.appendChild(ring); g.appendChild(circle); g.appendChild(label);
+      opponentsLayer.appendChild(g);
+    });
+  }
+
+  function updateRemoveBtn(){
+    removeOppBtn.disabled = !boardState.selected;
+  }
+
+  function addOpponent(){
+    oppSeq++;
+    var id = 'o' + oppSeq + '-' + Date.now();
+    var n = boardState.opponents.length;
+    var x = clamp(200 + ((n % 3) - 1) * 60, 34, 366);
+    var y = clamp(260 + Math.floor(n / 3) * 50, 34, 586);
+    boardState.opponents.push({id:id, x:x, y:y});
+    renderOpponents();
+    updatePathForMode();
+    persistBoard();
+  }
+
+  function toggleSelectOpponent(id){
+    boardState.selected = (boardState.selected === id) ? null : id;
+    renderOpponents();
+    updateRemoveBtn();
+  }
+
+  function deselectOpponent(){
+    if(boardState.selected){
+      boardState.selected = null;
+      renderOpponents();
+      updateRemoveBtn();
+    }
+  }
+
+  function removeSelectedOpponent(){
+    if(!boardState.selected) return;
+    boardState.opponents = boardState.opponents.filter(function(o){ return o.id !== boardState.selected; });
+    boardState.selected = null;
+    renderOpponents();
+    updatePathForMode();
+    persistBoard();
+    updateRemoveBtn();
+  }
+
+  var clearPathBtn = document.getElementById('clearPathBtn');
+  addOppBtn.addEventListener('click', addOpponent);
+  removeOppBtn.addEventListener('click', removeSelectedOpponent);
+  clearPathBtn.addEventListener('click', function(){
+    boardState.mode = null;
+    modeButtons.forEach(function(bb){ bb.classList.remove('active'); });
+    updatePathForMode();
+    persistBoard();
+  });
+
+  modeButtons.forEach(function(b){
+    b.addEventListener('click', function(){
+      var m = b.dataset.mode;
+      boardState.mode = (boardState.mode === m) ? null : m;
+      modeButtons.forEach(function(bb){ bb.classList.toggle('active', bb.dataset.mode === boardState.mode); });
+      updatePathForMode();
+      persistBoard();
+    });
+  });
+
+  /* --- Dragging --- */
+  var dragging = null;
+  svgEl.addEventListener('pointerdown', function(e){
+    var g = e.target.closest ? e.target.closest('.draggable') : null;
+    if(!g){ deselectOpponent(); return; }
+    e.preventDefault();
+    try{ g.setPointerCapture(e.pointerId); }catch(err){}
+    dragging = { el:g, kind:g.dataset.kind, key:g.dataset.key, moved:false, startX:e.clientX, startY:e.clientY };
+  });
+  var rafScheduled = false;
+  svgEl.addEventListener('pointermove', function(e){
+    if(!dragging) return;
+    var dx = e.clientX - dragging.startX, dy = e.clientY - dragging.startY;
+    if(Math.abs(dx) > 3 || Math.abs(dy) > 3) dragging.moved = true;
+    var p = toSvgPoint(e);
+    setMarkerPos(dragging.kind, dragging.key, p.x, p.y);
+    if(!rafScheduled){
+      rafScheduled = true;
+      requestAnimationFrame(function(){ rafScheduled = false; updatePathForMode(); });
+    }
+  });
+  function endDrag(e){
+    if(!dragging) return;
+    if(!dragging.moved && dragging.kind === 'opp'){
+      toggleSelectOpponent(dragging.key);
+    }
+    dragging = null;
+    updatePathForMode();
+    persistBoard();
+  }
+  svgEl.addEventListener('pointerup', endDrag);
+  svgEl.addEventListener('pointercancel', function(){ dragging = null; });
+
+  /* --- Tactical path --- */
+  function dist(a,b){ var dx=a.x-b.x, dy=a.y-b.y; return Math.sqrt(dx*dx+dy*dy); }
+  function lerpX(a,b,y){
+    if(a.y === b.y) return a.x;
+    var t = (a.y - y) / (a.y - b.y);
+    return a.x + (b.x - a.x) * t;
+  }
+  function svgPath(tag, attrs){
+    var el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+    Object.keys(attrs).forEach(function(k){ el.setAttribute(k, attrs[k]); });
+    return el;
+  }
+  function drawLine(a, b, tone, dashed){
+    pathLayer.appendChild(svgPath('path', {
+      'd': 'M ' + a.x + ',' + a.y + ' L ' + b.x + ',' + b.y,
+      'class': 'path-line path-' + tone + (dashed ? ' dashed' : ''),
+      'marker-end': 'url(#arrow' + tone.charAt(0).toUpperCase() + tone.slice(1) + ')'
+    }));
+  }
+  function drawCurve(a, mid, b, tone, dashed){
+    pathLayer.appendChild(svgPath('path', {
+      'd': 'M ' + a.x + ',' + a.y + ' Q ' + mid.x + ',' + mid.y + ' ' + b.x + ',' + b.y,
+      'class': 'path-line path-' + tone + (dashed ? ' dashed' : ''),
+      'marker-end': 'url(#arrow' + tone.charAt(0).toUpperCase() + tone.slice(1) + ')'
+    }));
+  }
+  function setPathCaption(text){
+    if(text){ pathCaption.textContent = text; pathCaption.hidden = false; }
+    else{ pathCaption.hidden = true; pathCaption.textContent = ''; }
+  }
+
+  function updatePathForMode(){
+    pathLayer.innerHTML = '';
+    if(!boardState.mode){ setPathCaption(''); return; }
+
+    var activeKey = currentSide === 'esquerda' ? 'ae' : 'ad';
+    var origin = boardState.positions[activeKey];
+
+    if(boardState.mode === 'ataque'){
+      var goal = {x:200, y:34};
+      var inWay = boardState.opponents.filter(function(o){
+        return o.y < origin.y - 10 && o.y > goal.y + 10 && Math.abs(o.x - lerpX(origin, goal, o.y)) < 90;
+      }).sort(function(a,b){ return b.y - a.y; });
+
+      if(inWay.length === 0){
+        drawLine(origin, goal, 'good', false);
+        setPathCaption('Caminho livre. Vai direto ao remate.');
+      }else if(inWay.length === 1){
+        var def = inWay[0];
+        var bend = (def.x >= origin.x) ? -70 : 70;
+        var midY = (origin.y + goal.y) / 2;
+        var mid = { x: lerpX(origin, goal, midY) + bend, y: midY };
+        drawCurve(origin, mid, goal, 'amber', false);
+        setPathCaption('1x1: finta o defesa e segue para o remate.');
+      }else{
+        var midY2 = (origin.y + goal.y) / 2;
+        var midLeft = { x: lerpX(origin, goal, midY2) - 70, y: midY2 };
+        var midRight = { x: lerpX(origin, goal, midY2) + 70, y: midY2 };
+        drawCurve(origin, midLeft, goal, 'amber', true);
+        drawCurve(origin, midRight, goal, 'amber', true);
+        setPathCaption('1x2: atrai um defensor, decide no último instante, remate ou assistência.');
+      }
+    }else if(boardState.mode === 'defesa'){
+      if(boardState.opponents.length === 0){
+        setPathCaption('Sem adversário em campo. Adiciona um para veres o caminho de pressão.');
+      }else{
+        var nearest = boardState.opponents.slice().sort(function(a,b){
+          return dist(origin,a) - dist(origin,b);
+        })[0];
+        drawLine(origin, {x:nearest.x, y:nearest.y}, 'danger', false);
+        setPathCaption('Pressiona de imediato. Tenta recuperar a bola nos primeiros metros.');
+      }
+    }
+  }
+
+  /* ================= Quiz ================= */
+  var questions = [
+    {
+      label: 'Bola alta ao meio-campo',
+      situation: 'A bola vem alta, lançada para o meio-campo, na tua direção. O que fazes?',
+      options: [
+        'Domino a bola, controlando-a antes de decidir o próximo passo',
+        'Deixo passar por cima e vou buscar mais atrás',
+        'Cabeceio de qualquer forma para a frente',
+        'Chuto de primeira sem controlar'
+      ],
+      correct: 0,
+      explanation: 'Bola alta ao meio-campo: domina primeiro. Só depois decides o próximo passe ou condução.',
+      tip: 'Exemplo: se a bola vier mal amortecida, volta para o adversário e perdes a vantagem do espaço.'
+    },
+    {
+      label: 'Bola lançada pelo lateral',
+      situation: 'O teu lateral lança uma bola longa e forte na tua direção. Como a recebes?',
+      options: [
+        'De cabeça, para ganhar tempo',
+        'A abaixar o corpo, para deixar passar',
+        'No peito, a amortecer, e tento jogar com ela',
+        'Deixo bater no chão e depois vejo'
+      ],
+      correct: 2,
+      explanation: 'Nunca de cabeça, nunca a abaixar o corpo. Domina no peito e tenta jogar com a bola.',
+      tip: 'Exemplo: um toque de cabeça sem controlo devolve a bola ao adversário mais perto. No peito, ganhas tempo para escolher.'
+    },
+    {
+      label: 'Sem bola, no ataque',
+      situation: 'Estás sem bola, no ataque. O que deves estar sempre a fazer?',
+      options: [
+        'Ficar parado à espera de a bola chegar',
+        'Procurar espaços livres, mexer-me constantemente',
+        'Voltar para trás para ajudar a defesa o tempo todo',
+        'Ficar sempre colado ao lateral'
+      ],
+      correct: 1,
+      explanation: 'Busca espaços. Um avançado que não se mexe é fácil de marcar.',
+      tip: 'Exemplo: muda de zona a cada 10 ou 15 segundos. Parado no mesmo sítio, o defesa central já sabe onde estás.'
+    },
+    {
+      label: 'Recebeste no corredor',
+      situation: 'Recebes a bola no teu corredor, de frente para o adversário. O que fazes?',
+      options: [
+        'Toco a bola para trás, para o médio',
+        'Vou ao 1x1 para cima do defensor, sempre para a frente',
+        'Chuto a bola para fora, para não arriscar',
+        'Espero que um companheiro apareça antes de decidir'
+      ],
+      correct: 1,
+      explanation: 'No corredor, vai ao 1x1. Não voltes a bola para trás, joga sempre para a frente.',
+      tip: 'Exemplo: encara o defensor de frente, finge ir para um lado e sai para o outro, sempre a ganhar terreno.'
+    },
+    {
+      label: 'Sob pressão, sem passe claro',
+      situation: 'Estás sob pressão com a bola, sem opção clara de passe. O que NÃO deves fazer?',
+      options: [
+        'Tentar o 1x1 mesmo com risco',
+        'Proteger a bola e procurar espaço',
+        'Livrar-me da bola só para me livrar dela, sem intenção',
+        'Arriscar uma condução para a frente'
+      ],
+      correct: 2,
+      explanation: 'Nunca te livres da bola só para te livrares dela. Joga sempre com intenção, mesmo sob pressão.',
+      tip: 'Exemplo: mesmo cercado, protege a bola com o corpo e pensa um segundo antes de decidir.'
+    },
+    {
+      label: 'Perdeste a bola no 1x1',
+      situation: 'Perdeste a bola numa jogada de 1x1. Como reages?',
+      options: [
+        'Fico chateado e paro de tentar dribles',
+        'Sem problema, continuo a jogar e a tentar',
+        'A partir de agora só passo, nunca mais arrisco',
+        'Espero a bronca do treinador'
+      ],
+      correct: 1,
+      explanation: 'Perder a bola não é problema. Faz parte de arriscar. Continua a tentar.',
+      tip: 'Exemplo: depois de perderes a bola num drible, o próximo lance é uma folha em branco. Tenta de novo sem medo.'
+    },
+    {
+      label: 'Contra-ataque do adversário',
+      situation: 'Perdeste a bola em ataque e o adversário arranca em contra-ataque perigoso. O que fazes?',
+      options: [
+        'Tento recuperar a bola de imediato e, se não chegar a tempo, faço uma falta tática para travar a jogada',
+        'Deixo correr, não é problema meu, é trabalho da defesa',
+        'Fico a reclamar do árbitro em vez de correr',
+        'Só recupero a posição, sem pressionar quem tem a bola'
+      ],
+      correct: 0,
+      explanation: 'Assim que perdes a bola, persegue-a de imediato. Se não chegares a tempo e a jogada for perigosa, trava com uma falta tática, sem entrada dura, só para cortar o contra-ataque.',
+      tip: 'Exemplo: se perderes a bola a 20 metros da tua baliza e o adversário fica cara a cara com o guarda-redes, corre atrás e trava a jogada.'
+    },
+    {
+      label: 'Antes de receberes a bola',
+      situation: 'Antes de a bola chegar até ti, o que deves fazer?',
+      options: [
+        'Olhar por cima do ombro, ver se tenho um adversário a marcar-me antes de a bola chegar',
+        'Só penso no que vou fazer depois de já ter a bola no pé',
+        'Fico de costas para o jogo, focado só na bola',
+        'Nada, decido tudo no momento em que recebo'
+      ],
+      correct: 0,
+      explanation: 'Olha à tua volta antes de a bola chegar. Saber se estás marcado, e por que lado, decide como controlas.',
+      tip: 'Exemplo: se sentires o adversário a vir pela direita, prepara o primeiro toque para a esquerda, já a fugir da marcação.'
+    },
+    {
+      label: 'Estás livre, sem marcação',
+      situation: 'Estás livre, sem ninguém a marcar-te, mas o colega com a bola não repara em ti. O que fazes?',
+      options: [
+        'Espero caladamente que ele me veja sozinho',
+        'Peço a bola em voz alta e com convicção',
+        'Vou para uma zona ainda mais escondida',
+        'Desisto e vou ajudar na defesa'
+      ],
+      correct: 1,
+      explanation: 'Se estás livre, pede a bola bem alto. Não esperes que o colega adivinhe, chama por ela com convicção.',
+      tip: 'Exemplo: grita o nome do colega e aponta para o espaço livre para onde queres a bola.'
+    },
+    {
+      label: 'Um-dois com o lateral',
+      situation: 'Estás junto ao teu lateral, bem marcado. Como podes livrar-te da marcação com a ajuda dele?',
+      options: [
+        'Peço a bola, protejo-a, devolvo-a de primeira ao lateral e movimento-me para espaço livre',
+        'Fico parado à espera que o lateral resolva sozinho',
+        'Peço a bola e tento sempre sair sozinho, mesmo bem marcado',
+        'Digo ao lateral para não me passar mais a bola'
+      ],
+      correct: 0,
+      explanation: 'Combina o um-dois: pede, protege, devolve de primeira ao lateral e movimenta-te logo a seguir para receberes de novo em espaço livre.',
+      tip: 'Exemplo: recebes de costas para a baliza, tocas de imediato para o lateral e arrancas para o espaço nas costas do teu marcador.'
+    },
+    {
+      label: 'Canto a favor',
+      situation: 'A tua equipa vai ter um canto. O que fazes?',
+      options: [
+        'Peço para bater eu o canto',
+        'Fico à espera que outro peça primeiro',
+        'Vou para o banco, cantos não são comigo',
+        'Só me preocupo com isso se ninguém quiser bater'
+      ],
+      correct: 0,
+      explanation: 'Pede para bater o canto. É uma oportunidade de criar perigo, mostra que queres responsabilidade na jogada.',
+      tip: 'Exemplo: levanta a mão e diz ao treinador ou aos colegas que bates tu, antes que outro se ofereça.'
+    },
+    {
+      label: 'Frente ao golo, com espaço',
+      situation: 'Estás de frente para o golo, com espaço para rematar. Como deves bater?',
+      options: [
+        'Com força e convicção, sem hesitar',
+        'Devagar, só para não falhar de vez',
+        'Espero um colega melhor posicionado, mesmo tendo remate limpo',
+        'Toco a bola para trás para jogar mais seguro'
+      ],
+      correct: 0,
+      explanation: 'Com espaço e frente ao golo, bate forte e com vontade. Hesitar é o que mais facilita a defesa do guarda-redes.',
+      tip: 'Exemplo: se o guarda-redes ainda está a reposicionar-se, um remate forte e colocado vale mais do que um toque fraco.'
+    },
+    {
+      label: 'A bater um penálti',
+      situation: 'Vais bater um penálti. Qual é a melhor abordagem?',
+      options: [
+        'Com confiança, forte, para um dos lados da baliza',
+        'Devagar, para o meio, à espera que o guarda-redes saia',
+        'Com medo de falhar, só para despachar',
+        'Olho para o guarda-redes até ao último segundo para decidir o lado'
+      ],
+      correct: 0,
+      explanation: 'No penálti, decide o lado antes e bate com confiança e força. A hesitação é o que mais atrapalha.',
+      tip: 'Exemplo: escolhe o lado no caminho até à bola e compromete-te com essa decisão, sem mudar no último instante.'
+    },
+    {
+      label: 'Boca seca durante o jogo',
+      situation: 'Sentes a boca seca a meio do jogo. O que significa e o que fazes?',
+      options: [
+        'É sinal de desidratação, bebo água assim que possível, no intervalo',
+        'É normal, não preciso de fazer nada',
+        'Só bebo água se sentir cãibras',
+        'Ignoro, beber água a meio do jogo atrapalha'
+      ],
+      correct: 0,
+      explanation: 'Boca seca é sinal de desidratação. Bebe água no intervalo, ou assim que houver paragem no jogo.',
+      tip: 'Exemplo: leva sempre uma garrafa de água para o banco e bebe mesmo sem teres muita sede, a sede já vem atrasada.'
+    },
+    {
+      label: 'Colega reclama que não passaste',
+      situation: 'Um colega reclama porque não lhe passaste a bola. Como reages?',
+      options: [
+        'Levanto a cabeça, mantenho a calma, e digo que não vi ou que fica para a próxima',
+        'Discuto e digo que a decisão foi minha e ele que se cale',
+        'Ignoro completamente e viro as costas',
+        'Paro de jogar para explicar tudo em detalhe no meio do jogo'
+      ],
+      correct: 0,
+      explanation: 'Mantém a calma. Responde com uma frase curta, "não vi" ou "deixa, prometo que é para a próxima", e continua concentrado no jogo.',
+      tip: 'Exemplo: um simples aceno de cabeça e "a próxima é tua" resolve mais do que discutir no meio da jogada.'
+    }
+  ];
+
+  var quizDots = document.getElementById('quizDots');
+  var quizBody = document.getElementById('quizBody');
+  var quizBest = document.getElementById('quizBest');
+  var quizState;
+
+  function shuffled(n){
+    var arr = [];
+    for(var i=0;i<n;i++) arr.push(i);
+    for(var i=arr.length-1;i>0;i--){
+      var j = Math.floor(Math.random()*(i+1));
+      var t = arr[i]; arr[i]=arr[j]; arr[j]=t;
+    }
+    return arr;
+  }
+
+  function newQuizState(){
+    var order = shuffled(questions.length);
+    var optionOrder = order.map(function(qIdx){ return shuffled(questions[qIdx].options.length); });
+    return { order: order, optionOrder: optionOrder, index: 0, answers: [], selected: [], score: 0, done: false };
+  }
+
+  function currentQuestion(){ return questions[quizState.order[quizState.index]]; }
+
+  function loadBest(){
+    try{ return Number(localStorage.getItem('bussola-quiz-best') || 0); }catch(e){ return 0; }
+  }
+  function saveBest(score){
+    try{
+      var b = loadBest();
+      if(score > b) localStorage.setItem('bussola-quiz-best', String(score));
+    }catch(e){}
+  }
+
+  function renderBest(){
+    var b = loadBest();
+    if(b > 0){
+      quizBest.hidden = false;
+      quizBest.textContent = 'Melhor pontuação: ' + b + ' / ' + questions.length;
+    }else{
+      quizBest.hidden = true;
+    }
+  }
+
+  function renderDots(){
+    quizDots.innerHTML = '';
+    for(var i=0;i<questions.length;i++){
+      var d = document.createElement('span');
+      d.className = 'dot';
+      if(i === quizState.index && !quizState.done) d.className += ' current';
+      if(quizState.answers[i] === true) d.className += ' correct';
+      if(quizState.answers[i] === false) d.className += ' wrong';
+      quizDots.appendChild(d);
+    }
+  }
+
+  function renderQuestion(){
+    var q = currentQuestion();
+    var answered = quizState.answers[quizState.index] !== undefined;
+    var optOrder = quizState.optionOrder[quizState.index];
+    var optsHtml = optOrder.map(function(origIdx){
+      var cls = 'opt';
+      if(answered){
+        if(origIdx === q.correct) cls += ' correct';
+        else if(quizState.selected[quizState.index] === origIdx) cls += ' wrong';
+      }
+      return '<button type="button" class="' + cls + '" data-opt="' + origIdx + '"' + (answered ? ' disabled' : '') + '>' + q.options[origIdx] + '</button>';
+    }).join('');
+
+    var isLast = quizState.index === questions.length - 1;
+    var feedbackHtml = '';
+    if(answered){
+      var ok = quizState.answers[quizState.index];
+      feedbackHtml =
+        '<div class="quiz-feedback ' + (ok ? '' : 'is-wrong') + '">' +
+          '<p class="feedback-title">' + (ok ? 'Certo.' : 'Não é essa.') + '</p>' +
+          '<p class="exp">' + q.explanation + '</p>' +
+        '</div>' +
+        '<button type="button" class="btn-primary" data-action="next">' + (isLast ? 'Ver resultado' : 'Próxima situação') + '</button>';
+    }
+
+    quizBody.innerHTML =
+      '<p class="quiz-progress">Situação ' + (quizState.index + 1) + ' de ' + questions.length + '</p>' +
+      '<h3 class="quiz-situation">' + q.situation + '</h3>' +
+      '<div class="opts">' + optsHtml + '</div>' +
+      feedbackHtml;
+  }
+
+  function renderSummary(){
+    var total = questions.length;
+    var nota = Math.round((quizState.score / total) * 100) / 10;
+    var tier;
+    if(nota >= 9){
+      tier = 'Sabes exatamente o que fazer em cada situação. Continua assim.';
+    }else if(nota >= 7){
+      tier = 'Estás quase lá. Revê as sugestões em baixo antes do próximo treino.';
+    }else{
+      tier = 'Vale a pena rever as regras em campo, aqui em cima, antes do próximo jogo.';
+    }
+
+    var missedHtml = '';
+    quizState.order.forEach(function(qIdx, pos){
+      if(quizState.answers[pos] === false){
+        missedHtml += '<li><strong>' + questions[qIdx].label + '</strong>: ' + questions[qIdx].tip + '</li>';
+      }
+    });
+
+    quizBody.innerHTML =
+      '<p class="quiz-progress">Treino completo</p>' +
+      '<p class="quiz-score">' + nota.toFixed(1) + '<span class="quiz-score-max"> / 10</span></p>' +
+      '<p class="quiz-score-sub">' + quizState.score + ' de ' + total + ' situações corretas</p>' +
+      '<p class="quiz-tier">' + tier + '</p>' +
+      (missedHtml ? '<div class="quiz-missed"><p>Sugestões para melhorar</p><ul>' + missedHtml + '</ul></div>' : '') +
+      '<button type="button" class="btn-primary" data-action="reset">Repetir treino</button>';
+  }
+
+  function renderQuizAll(){
+    if(quizState.done){ renderSummary(); } else { renderQuestion(); }
+    renderDots();
+    renderBest();
+    persistHot();
+  }
+
+  quizBody.addEventListener('click', function(e){
+    var optBtn = e.target.closest('[data-opt]');
+    if(optBtn){
+      if(quizState.answers[quizState.index] !== undefined) return;
+      var origIdx = Number(optBtn.dataset.opt);
+      var q = currentQuestion();
+      var correct = origIdx === q.correct;
+      quizState.selected[quizState.index] = origIdx;
+      quizState.answers[quizState.index] = correct;
+      if(correct) quizState.score++;
+      renderQuizAll();
+      return;
+    }
+    var nextBtn = e.target.closest('[data-action="next"]');
+    if(nextBtn){
+      if(quizState.index < questions.length - 1){
+        quizState.index++;
+      }else{
+        quizState.done = true;
+        saveBest(quizState.score);
+      }
+      renderQuizAll();
+      return;
+    }
+    var resetBtn = e.target.closest('[data-action="reset"]');
+    if(resetBtn){
+      quizState = newQuizState();
+      renderQuizAll();
+      return;
+    }
+  });
+
+  /* ================= Boot + hot snapshot ================= */
+  function persistHot(){
+    try{
+      if(window.claude && window.claude.hot && window.claude.hot.snapshot){
+        window.claude.hot.snapshot({ quiz: quizState, board: boardState });
+      }
+    }catch(e){}
+  }
+
+  function boot(initial){
+    quizState = (initial && initial.quiz && initial.quiz.order) ? initial.quiz : newQuizState();
+    boardState = loadBoard(initial && initial.board);
+
+    var savedSide = 'esquerda';
+    try{ savedSide = localStorage.getItem('bussola-side') || 'esquerda'; }catch(e){}
+    setSide(savedSide);
+
+    applyStoredPositions();
+    renderOpponents();
+    updateRemoveBtn();
+    modeButtons.forEach(function(b){ b.classList.toggle('active', b.dataset.mode === boardState.mode); });
+    updatePathForMode();
+
+    renderQuizAll();
+  }
+
+  if(window.claude && window.claude.hot && window.claude.hot.ready){
+    window.claude.hot.ready(boot);
+  }else{
+    boot(window.claude && window.claude.hot ? window.claude.hot.data : null);
+  }
+})();
+</script>
