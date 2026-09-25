@@ -1,4 +1,5 @@
 <title>Bússola do Avançado</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Work+Sans:wght@400;500;600&display=swap">
 <style>
   :root{
@@ -16,9 +17,22 @@
     --line:#CFE1D5;
     --good:#2C8C5B;
     --danger:#C2493B;
-    --turf-1:#1E6146;
-    --turf-2:#15492F;
-    --chalk-line:#F6FFF9;
+    --turf-1:#2E8B4E;
+    --turf-2:#267A43;
+    --turf-sheen:#7FD39A;
+    --turf-shade:#0B2E18;
+    --surround-1:#1A4F30;
+    --surround-2:#0F3520;
+    --chalk-line:#FFFFFF;
+    --chalk-shadow:rgba(6,30,15,.38);
+    --net:#FFFFFF;
+    --marker-hi:#FFFFFF;
+    --marker-lo:#D4E4DA;
+    --marker-ring:#0F4A2C;
+    --marker-ink:#0C2A1E;
+    --opp-hi:#F28B7C;
+    --opp-lo:#A93427;
+    --opp-ring:#FFFFFF;
     --shadow:0 1px 2px rgba(10,35,24,.06), 0 10px 24px rgba(10,35,24,.08);
     color-scheme:light;
   }
@@ -38,9 +52,22 @@
       --line:#22402E;
       --good:#4FBE85;
       --danger:#E1685A;
-      --turf-1:#173726;
-      --turf-2:#10281B;
-      --chalk-line:#DDEEE3;
+      --turf-1:#1F6139;
+      --turf-2:#1A5331;
+      --turf-sheen:#6FC08A;
+      --turf-shade:#020D06;
+      --surround-1:#0E2C1B;
+      --surround-2:#07180F;
+      --chalk-line:#E6F3EA;
+      --chalk-shadow:rgba(0,0,0,.5);
+      --net:#DDEEE3;
+      --marker-hi:#F4FAF6;
+      --marker-lo:#BCD3C4;
+      --marker-ring:#0A2318;
+      --marker-ink:#0C2A1E;
+      --opp-hi:#F4907F;
+      --opp-lo:#A53428;
+      --opp-ring:#F6ECEA;
       --shadow:0 1px 2px rgba(0,0,0,.35), 0 10px 24px rgba(0,0,0,.4);
       color-scheme:dark;
     }
@@ -60,9 +87,22 @@
     --line:#22402E;
     --good:#4FBE85;
     --danger:#E1685A;
-    --turf-1:#173726;
-    --turf-2:#10281B;
-    --chalk-line:#DDEEE3;
+    --turf-1:#1F6139;
+    --turf-2:#1A5331;
+    --turf-sheen:#6FC08A;
+    --turf-shade:#020D06;
+    --surround-1:#0E2C1B;
+    --surround-2:#07180F;
+    --chalk-line:#E6F3EA;
+    --chalk-shadow:rgba(0,0,0,.5);
+    --net:#DDEEE3;
+    --marker-hi:#F4FAF6;
+    --marker-lo:#BCD3C4;
+    --marker-ring:#0A2318;
+    --marker-ink:#0C2A1E;
+    --opp-hi:#F4907F;
+    --opp-lo:#A53428;
+    --opp-ring:#F6ECEA;
     --shadow:0 1px 2px rgba(0,0,0,.35), 0 10px 24px rgba(0,0,0,.4);
     color-scheme:dark;
   }
@@ -79,14 +119,108 @@
   button{font-family:inherit;}
   button:focus-visible, .rule-card:focus-visible{outline:2px solid var(--amber); outline-offset:2px;}
 
+  body{margin:0;}
   .page{
     max-width:640px;
     margin:0 auto;
     padding-inline:20px;
-    padding-block:28px 48px;
+    padding-top:24px;
+    padding-bottom:calc(112px + env(safe-area-inset-bottom));
     display:flex;
     flex-direction:column;
-    gap:32px;
+    gap:24px;
+  }
+
+  /* Tab panels */
+  .tab-panel{
+    display:flex;
+    flex-direction:column;
+    gap:18px;
+  }
+  .tab-panel[hidden]{display:none;}
+  .tab-panel.is-entering{animation:panelIn .18s ease-out both;}
+  @keyframes panelIn{
+    from{opacity:0;transform:translateY(8px);}
+    to{opacity:1;transform:none;}
+  }
+  .panel-head{display:flex;flex-direction:column;gap:4px;}
+  .panel-kicker{
+    font:600 11px 'Oswald',sans-serif;
+    text-transform:uppercase;
+    letter-spacing:.1em;
+    color:var(--green);
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .panel-kicker::before{
+    content:"";
+    width:18px;height:2px;border-radius:2px;
+    background:var(--amber);
+  }
+  .panel-head h2{
+    font-size:clamp(22px,6vw,26px);
+    font-weight:600;
+    letter-spacing:.01em;
+    color:var(--ink);
+  }
+
+  /* Bottom tab bar */
+  .tabbar{
+    position:fixed;
+    left:0;right:0;bottom:0;
+    z-index:20;
+    background:color-mix(in srgb, var(--surface) 92%, transparent);
+    -webkit-backdrop-filter:saturate(1.4) blur(14px);
+    backdrop-filter:saturate(1.4) blur(14px);
+    border-top:1px solid var(--line);
+    box-shadow:0 -1px 2px rgba(10,35,24,.04), 0 -8px 24px rgba(10,35,24,.06);
+    padding-bottom:env(safe-area-inset-bottom);
+  }
+  .tabbar-inner{
+    max-width:640px;
+    margin:0 auto;
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    padding:6px 8px 8px;
+    gap:4px;
+  }
+  .tab-btn{
+    border:none;
+    background:transparent;
+    color:var(--ink-muted);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:3px;
+    padding:4px 2px;
+    min-height:56px;
+    border-radius:14px;
+    cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+    transition:color .15s;
+  }
+  .tab-icon{
+    display:flex;align-items:center;justify-content:center;
+    width:56px;height:30px;
+    border-radius:999px;
+    transition:background .18s, color .18s, transform .18s;
+  }
+  .tab-icon svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;}
+  .tab-label{
+    font:600 12px 'Oswald',sans-serif;
+    text-transform:uppercase;
+    letter-spacing:.04em;
+    line-height:1.15;
+    text-align:center;
+  }
+  .tab-btn:hover .tab-icon{background:var(--surface-2);}
+  .tab-btn.active{color:var(--ink);}
+  .tab-btn.active .tab-icon{background:var(--amber);color:var(--amber-ink);}
+  .tab-btn:active .tab-icon{transform:scale(.94);}
+  @media (prefers-reduced-motion:reduce){
+    .tab-panel.is-entering{animation:none;}
+    .tab-icon{transition:none;}
   }
 
   /* Header */
@@ -131,7 +265,20 @@
     background:var(--amber);
     color:var(--amber-ink);
   }
-  .top .segmented{margin-top:16px;}
+  .top{padding-bottom:18px;border-bottom:1px solid var(--line);}
+  .side-row{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+  }
+  .side-row-label{
+    font:600 12px 'Oswald',sans-serif;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    color:var(--ink-muted);
+  }
 
   /* Pitch */
   .pitch-card{
@@ -147,31 +294,73 @@
   .pitch-card svg{width:100%;height:auto;display:block;touch-action:none;}
   .turf-a{fill:var(--turf-1);}
   .turf-b{fill:var(--turf-2);}
-  .pitch-outline{fill:url(#turf);stroke:var(--line);}
-  .pitch-line{stroke:var(--chalk-line);stroke-width:2;fill:none;opacity:.9;}
-  .pitch-line-fill{fill:var(--chalk-line);opacity:.9;}
+  .stop-sheen{stop-color:var(--turf-sheen);}
+  .stop-shade{stop-color:var(--turf-shade);}
+  .stop-surround-1{stop-color:var(--surround-1);}
+  .stop-surround-2{stop-color:var(--surround-2);}
+  .stop-amber{stop-color:var(--amber);}
+  .stop-marker-hi{stop-color:var(--marker-hi);}
+  .stop-marker-lo{stop-color:var(--marker-lo);}
+  .stop-opp-hi{stop-color:var(--opp-hi);}
+  .stop-opp-lo{stop-color:var(--opp-lo);}
+  .pitch-surround{fill:url(#surroundGrad);}
+  .surround-stripes{fill:url(#surroundStripes);}
+  .pitch-cast{fill:#000;opacity:.16;}
+  .pitch-outline{fill:url(#turf);stroke:var(--turf-shade);stroke-opacity:.5;}
+  .pitch-overlay{pointer-events:none;}
+  .crossmow{fill:url(#crossMow);}
+  .grain{fill:url(#grain);}
+  .floodlight{fill:url(#floodlight);}
+  .vignette{fill:url(#vignette);}
+  .chalk{stroke:var(--chalk-line);fill:var(--chalk-line);}
+  .chalk-shadow{stroke:var(--chalk-shadow);fill:var(--chalk-shadow);}
+  .pitch-line{stroke-width:2.2;fill:none;opacity:.92;stroke-linecap:round;stroke-linejoin:round;}
+  .pitch-line-fill{opacity:.95;}
+  .goal-depth-bottom{fill:url(#goalDepthBottom);}
+  .goal-depth-top{fill:url(#goalDepthTop);}
+  .goal-net{fill:url(#net);}
+  .net-line{fill:none;stroke:var(--net);stroke-width:.5;stroke-opacity:.6;}
+  .goal-frame{fill:none;stroke:var(--chalk-line);stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round;}
+  .goal-frame-shadow{fill:none;stroke:#000;stroke-opacity:.4;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;}
+  .goal-post{fill:var(--chalk-line);}
   .zone-shape{
-    fill:var(--amber);
-    opacity:.08;
+    fill:url(#zoneGlow);
+    opacity:.45;
     stroke:var(--amber);
-    stroke-width:1.5;
-    stroke-opacity:.25;
-    transition:opacity .2s, stroke-opacity .2s;
+    stroke-width:1.2;
+    stroke-opacity:.4;
+    stroke-dasharray:5 4;
+    transition:opacity .2s, stroke-opacity .2s, stroke-width .2s;
   }
-  .zone-shape.active{opacity:.22;stroke-opacity:.75;}
+  .zone-shape.active{
+    opacity:1;
+    stroke-opacity:.95;
+    stroke-width:2;
+    stroke-dasharray:none;
+    filter:drop-shadow(0 0 4px color-mix(in srgb, var(--amber) 75%, transparent));
+  }
   .zone-label{
     font:600 9px 'Oswald',sans-serif;
-    letter-spacing:.05em;
-    fill:var(--ink-muted);
-    opacity:.75;
+    letter-spacing:.06em;
+    fill:#FFFFFF;
+    fill-opacity:.85;
+    paint-order:stroke;
+    stroke:rgba(4,24,12,.45);
+    stroke-width:2.4px;
+    stroke-linejoin:round;
     text-transform:uppercase;
   }
 
   .draggable{cursor:grab;touch-action:none;}
   .draggable:active{cursor:grabbing;}
 
-  .marker-circle{fill:var(--surface);stroke:var(--green-deep);stroke-width:3;}
-  .marker-label{font:700 11px 'Oswald',sans-serif;fill:var(--ink);text-anchor:middle;}
+  .marker-circle{
+    fill:url(#markerGrad);
+    stroke:var(--marker-ring);
+    stroke-width:3;
+    filter:drop-shadow(0 2px 1.6px rgba(0,0,0,.45));
+  }
+  .marker-label{font:700 11px 'Oswald',sans-serif;fill:var(--marker-ink);text-anchor:middle;}
   .pulse-ring{
     fill:none;
     stroke:var(--amber);
@@ -192,7 +381,7 @@
     opacity:0;
     transition:opacity .15s;
   }
-  .marker.player-active .marker-circle{fill:var(--amber);stroke:var(--amber-ink);}
+  .marker.player-active .marker-circle{fill:url(#amberGrad);stroke:var(--amber-ink);}
   .marker.player-active .marker-label{fill:var(--amber-ink);}
   .marker.player-active .player-tag{opacity:1;}
   .marker.player-active .pulse-ring{opacity:1;animation:pulse 1.8s ease-out infinite;}
@@ -204,10 +393,29 @@
     .marker.player-active .pulse-ring{animation:none;opacity:.35;}
   }
 
-  .opp-circle{fill:var(--danger);stroke:var(--surface);stroke-width:2;}
+  .opp-circle{
+    fill:url(#oppGrad);
+    stroke:var(--opp-ring);
+    stroke-width:2;
+    filter:drop-shadow(0 2px 1.6px rgba(0,0,0,.45));
+  }
   .opp-label{font:700 8px 'Oswald',sans-serif;fill:#fff;text-anchor:middle;}
-  .sel-ring{fill:none;stroke:var(--ink);stroke-width:2;stroke-dasharray:3 3;opacity:0;}
-  .opponent.selected .sel-ring{opacity:1;}
+  .sel-ring{fill:none;stroke:var(--chalk-line);stroke-width:2;stroke-dasharray:3 3;opacity:0;}
+  .opponent.selected .sel-ring{opacity:1;animation:selIn .2s ease-out both;}
+  .opp-body{transform-box:fill-box;transform-origin:center;}
+  .opponent.is-new .opp-body{animation:oppIn .26s cubic-bezier(.22,1,.36,1) both;}
+  @keyframes oppIn{
+    from{opacity:0;transform:scale(.35);}
+    to{opacity:1;transform:scale(1);}
+  }
+  .sel-ring{transform-box:fill-box;transform-origin:center;}
+  @keyframes selIn{
+    from{opacity:0;transform:scale(1.35);}
+    to{opacity:1;transform:scale(1);}
+  }
+  @media (prefers-reduced-motion:reduce){
+    .opponent.is-new .opp-body, .opponent.selected .sel-ring{animation:none;}
+  }
 
   .path-line{fill:none;stroke-width:3;stroke-linecap:round;}
   .path-line.dashed{stroke-dasharray:7 6;}
@@ -220,12 +428,22 @@
 
   .board-controls{
     display:flex;
-    flex-wrap:wrap;
-    gap:10px;
-    justify-content:space-between;
-    align-items:center;
+    flex-direction:column;
+    gap:12px;
+    padding-top:12px;
+    border-top:1px solid var(--line);
   }
+  .ctrl-group{display:flex;flex-direction:column;gap:8px;}
+  .ctrl-label{
+    font:600 11px 'Oswald',sans-serif;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    color:var(--ink-muted);
+  }
+  .ctrl-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
   .opp-controls{display:flex;gap:8px;flex-wrap:wrap;}
+  .btn-ghost--add{border-color:color-mix(in srgb, var(--danger) 45%, var(--line));}
+  .btn-ghost--add:hover:not(:disabled){border-color:var(--danger);}
   .btn-ghost{
     background:transparent;
     border:1px solid var(--line);
@@ -236,9 +454,10 @@
     padding:9px 16px;
     border-radius:999px;
     cursor:pointer;
-    transition:border-color .15s;
+    transition:border-color .15s, background .15s, transform .12s;
   }
-  .btn-ghost:hover:not(:disabled){border-color:var(--green);}
+  .btn-ghost:hover:not(:disabled){border-color:var(--green);background:var(--surface-2);}
+  .btn-ghost:active:not(:disabled){transform:scale(.97);}
   .btn-ghost:disabled{opacity:.4;cursor:default;}
 
   .board-hint{color:var(--ink-muted);font-size:13px;}
@@ -401,29 +620,121 @@
     color:var(--ink-muted);
     font-size:13px;
     padding-top:16px;
+    margin-top:8px;
     border-top:1px solid var(--line);
   }
+  .rule-card{box-shadow:0 1px 2px rgba(10,35,24,.04);}
+  .rule-card:active{transform:scale(.99);}
+  .rule-grid{margin-top:0;}
+  .quiz-body{margin-top:0;}
+  .dots{margin-top:0;}
 </style>
 
 <div class="page">
 
   <header class="top">
-    <p class="eyebrow">Vitória de Setúbal · Sub-10 · Sistema 3-1-2</p>
+    <p class="eyebrow">Vitória de Setúbal · Sub-11 · Sistema 3-1-2</p>
     <h1>Bússola do Avançado</h1>
     <p class="sub">O campo, a tua posição e as decisões que já sabes tomar.</p>
-    <div class="segmented" role="group" aria-label="Lado em que jogas hoje" id="sideToggle">
-      <button type="button" class="seg-btn" data-side="esquerda">Ala esquerda</button>
-      <button type="button" class="seg-btn" data-side="direita">Ala direita</button>
-    </div>
   </header>
 
-  <section class="pitch-card" aria-label="Formação em campo">
+  <section class="tab-panel" id="panel-campo" role="tabpanel" aria-labelledby="tab-campo" data-tab="campo">
+  <div class="panel-head">
+    <p class="panel-kicker">Campo</p>
+    <h2>Campo tático</h2>
+  </div>
+
+  <div class="side-row">
+    <span class="side-row-label">Hoje jogas como</span>
+    <div class="segmented" role="group" aria-label="Posição em que jogas hoje" id="sideToggle">
+      <button type="button" class="seg-btn" data-side="esquerda">Atacante Esquerdo</button>
+      <button type="button" class="seg-btn" data-side="direita">Atacante Direito</button>
+    </div>
+  </div>
+
+  <div class="pitch-card" role="group" aria-label="Formação em campo">
     <svg id="pitchSvg" viewBox="0 0 400 620" role="img" aria-label="Campo de futebol de 7, formação 3-1-2, com jogadores e adversários arrastáveis">
       <defs>
-        <pattern id="turf" width="40" height="40" patternUnits="userSpaceOnUse">
-          <rect width="40" height="20" class="turf-a"/>
-          <rect y="20" width="40" height="20" class="turf-b"/>
+        <!-- Relva: faixas de corte horizontais, com brilho suave em cada faixa (alinhadas com a linha de meio-campo) -->
+        <linearGradient id="mowSheenA" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" class="stop-sheen" stop-opacity=".16"/>
+          <stop offset=".55" class="stop-sheen" stop-opacity=".04"/>
+          <stop offset="1" class="stop-shade" stop-opacity=".06"/>
+        </linearGradient>
+        <linearGradient id="mowSheenB" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" class="stop-shade" stop-opacity=".1"/>
+          <stop offset=".6" class="stop-shade" stop-opacity=".02"/>
+          <stop offset="1" class="stop-sheen" stop-opacity=".05"/>
+        </linearGradient>
+        <pattern id="turf" x="0" y="316" width="400" height="84" patternUnits="userSpaceOnUse">
+          <rect width="400" height="42" class="turf-a"/>
+          <rect width="400" height="42" fill="url(#mowSheenA)"/>
+          <rect y="42" width="400" height="42" class="turf-b"/>
+          <rect y="42" width="400" height="42" fill="url(#mowSheenB)"/>
         </pattern>
+        <!-- Corte cruzado subtil (faixas verticais) para o efeito xadrez -->
+        <pattern id="crossMow" x="16" y="0" width="92" height="620" patternUnits="userSpaceOnUse">
+          <rect width="46" height="620" fill="#fff" fill-opacity=".035"/>
+          <rect x="46" width="46" height="620" fill="#000" fill-opacity=".035"/>
+        </pattern>
+        <!-- Grão fino da relva (sem filtros, leve para arrastar) -->
+        <pattern id="grain" width="9" height="9" patternUnits="userSpaceOnUse">
+          <rect x="1" y="2" width="1" height="2" fill="#fff" fill-opacity=".07"/>
+          <rect x="5" y="0" width="1" height="2" fill="#000" fill-opacity=".08"/>
+          <rect x="7" y="5" width="1" height="2" fill="#fff" fill-opacity=".06"/>
+          <rect x="3" y="6" width="1" height="2" fill="#000" fill-opacity=".07"/>
+        </pattern>
+        <radialGradient id="floodlight" cx=".5" cy=".42" r=".62">
+          <stop offset="0" stop-color="#fff" stop-opacity=".13"/>
+          <stop offset=".6" stop-color="#fff" stop-opacity=".03"/>
+          <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+        </radialGradient>
+        <radialGradient id="vignette" cx=".5" cy=".5" r=".72">
+          <stop offset=".55" class="stop-shade" stop-opacity="0"/>
+          <stop offset=".85" class="stop-shade" stop-opacity=".18"/>
+          <stop offset="1" class="stop-shade" stop-opacity=".42"/>
+        </radialGradient>
+        <!-- Envolvente do estádio -->
+        <linearGradient id="surroundGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" class="stop-surround-2"/>
+          <stop offset=".5" class="stop-surround-1"/>
+          <stop offset="1" class="stop-surround-2"/>
+        </linearGradient>
+        <pattern id="surroundStripes" x="0" y="316" width="400" height="84" patternUnits="userSpaceOnUse">
+          <rect width="400" height="42" fill="#fff" fill-opacity=".025"/>
+        </pattern>
+        <!-- Balizas: profundidade e rede -->
+        <linearGradient id="goalDepthBottom" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#000" stop-opacity=".2"/>
+          <stop offset="1" stop-color="#000" stop-opacity=".55"/>
+        </linearGradient>
+        <linearGradient id="goalDepthTop" x1="0" y1="1" x2="0" y2="0">
+          <stop offset="0" stop-color="#000" stop-opacity=".2"/>
+          <stop offset="1" stop-color="#000" stop-opacity=".55"/>
+        </linearGradient>
+        <pattern id="net" x="176" y="0" width="4" height="4" patternUnits="userSpaceOnUse">
+          <path d="M0 0.25H4M0.25 0V4" class="net-line"/>
+        </pattern>
+        <!-- Zonas e marcadores -->
+        <radialGradient id="zoneGlow" cx=".5" cy=".5" r=".7">
+          <stop offset="0" class="stop-amber" stop-opacity=".42"/>
+          <stop offset=".7" class="stop-amber" stop-opacity=".2"/>
+          <stop offset="1" class="stop-amber" stop-opacity=".1"/>
+        </radialGradient>
+        <radialGradient id="markerGrad" cx=".38" cy=".32" r=".75" fx=".34" fy=".26">
+          <stop offset="0" class="stop-marker-hi"/>
+          <stop offset=".55" class="stop-marker-hi"/>
+          <stop offset="1" class="stop-marker-lo"/>
+        </radialGradient>
+        <radialGradient id="amberGrad" cx=".38" cy=".32" r=".75" fx=".34" fy=".26">
+          <stop offset="0" stop-color="#FFD08A"/>
+          <stop offset=".5" class="stop-amber"/>
+          <stop offset="1" stop-color="#B86A12"/>
+        </radialGradient>
+        <radialGradient id="oppGrad" cx=".38" cy=".32" r=".75" fx=".34" fy=".26">
+          <stop offset="0" class="stop-opp-hi"/>
+          <stop offset="1" class="stop-opp-lo"/>
+        </radialGradient>
         <marker id="arrowGood" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
           <path d="M0,0 L10,5 L0,10 z" class="arrow-fill-good"/>
         </marker>
@@ -435,16 +746,60 @@
         </marker>
       </defs>
 
+      <!-- Envolvente do estádio e sombra do relvado (decorativo, fora das coordenadas do JS) -->
+      <rect x="0" y="0" width="400" height="620" rx="14" class="pitch-surround"/>
+      <rect x="0" y="0" width="400" height="620" rx="14" class="surround-stripes"/>
+      <rect x="15" y="18" width="370" height="590" rx="8" class="pitch-cast"/>
+
+      <!-- Balizas com profundidade e rede -->
+      <g class="goals" aria-hidden="true">
+        <rect x="176" y="6" width="48" height="10" class="goal-depth-top"/>
+        <rect x="176" y="6" width="48" height="10" class="goal-net"/>
+        <path d="M177.2,17.6 V7.6 H225.2 V17.6" class="goal-frame-shadow"/>
+        <path d="M176,16 V6 H224 V16" class="goal-frame"/>
+        <circle cx="176" cy="16" r="2" class="goal-post"/>
+        <circle cx="224" cy="16" r="2" class="goal-post"/>
+
+        <rect x="176" y="604" width="48" height="10" class="goal-depth-bottom"/>
+        <rect x="176" y="604" width="48" height="10" class="goal-net"/>
+        <path d="M177.2,605.6 V615.6 H225.2 V605.6" class="goal-frame-shadow"/>
+        <path d="M176,604 V614 H224 V604" class="goal-frame"/>
+        <circle cx="176" cy="604" r="2" class="goal-post"/>
+        <circle cx="224" cy="604" r="2" class="goal-post"/>
+      </g>
+
       <rect x="16" y="16" width="368" height="588" rx="6" class="pitch-outline" stroke-width="2"/>
 
-      <line x1="16" y1="316" x2="384" y2="316" class="pitch-line"/>
-      <circle cx="200" cy="316" r="46" class="pitch-line"/>
-      <circle cx="200" cy="316" r="2.5" class="pitch-line-fill"/>
+      <!-- Camadas de luz sobre a relva (não interativas) -->
+      <rect x="16" y="16" width="368" height="588" rx="6" class="pitch-overlay crossmow"/>
+      <rect x="16" y="16" width="368" height="588" rx="6" class="pitch-overlay grain"/>
+      <rect x="16" y="16" width="368" height="588" rx="6" class="pitch-overlay floodlight"/>
+      <rect x="16" y="16" width="368" height="588" rx="6" class="pitch-overlay vignette"/>
 
-      <rect x="150" y="558" width="100" height="34" class="pitch-line"/>
-      <rect x="176" y="598" width="48" height="6" class="pitch-line"/>
-      <rect x="150" y="28" width="100" height="34" class="pitch-line"/>
-      <rect x="176" y="16" width="48" height="6" class="pitch-line"/>
+      <!-- Linhas a cal: sombra projetada (use) + linhas -->
+      <use href="#chalkLines" class="chalk-shadow" transform="translate(0.7,1.3)"/>
+      <g class="chalk">
+        <g id="chalkLines">
+          <rect x="16" y="16" width="368" height="588" rx="6" class="pitch-line"/>
+
+          <line x1="16" y1="316" x2="384" y2="316" class="pitch-line"/>
+          <circle cx="200" cy="316" r="46" class="pitch-line"/>
+          <circle cx="200" cy="316" r="2.5" class="pitch-line-fill"/>
+
+          <rect x="150" y="558" width="100" height="34" class="pitch-line"/>
+          <rect x="176" y="598" width="48" height="6" class="pitch-line"/>
+          <rect x="150" y="28" width="100" height="34" class="pitch-line"/>
+          <rect x="176" y="16" width="48" height="6" class="pitch-line"/>
+
+          <circle cx="200" cy="46" r="1.8" class="pitch-line-fill"/>
+          <circle cx="200" cy="574" r="1.8" class="pitch-line-fill"/>
+
+          <path d="M16,23 A7,7 0 0 0 23,16" class="pitch-line"/>
+          <path d="M377,16 A7,7 0 0 0 384,23" class="pitch-line"/>
+          <path d="M23,604 A7,7 0 0 0 16,597" class="pitch-line"/>
+          <path d="M384,597 A7,7 0 0 0 377,604" class="pitch-line"/>
+        </g>
+      </g>
 
       <rect x="118" y="266" width="164" height="100" rx="10" class="zone-shape meio"></rect>
       <text x="126" y="284" class="zone-label">Meio-campo</text>
@@ -499,14 +854,23 @@
     <p class="board-hint">Arrasta os bonecos para ajustar as posições. Adiciona adversários e escolhe Ataque ou Defesa para veres o caminho.</p>
 
     <div class="board-controls">
-      <div class="segmented" role="group" aria-label="Modo tático" id="modeToggle">
-        <button type="button" class="seg-btn" data-mode="ataque">Ataque</button>
-        <button type="button" class="seg-btn" data-mode="defesa">Defesa</button>
+      <div class="ctrl-group">
+        <span class="ctrl-label">Seta tática</span>
+        <div class="ctrl-row">
+          <div class="segmented" role="group" aria-label="Modo tático" id="modeToggle">
+            <button type="button" class="seg-btn" data-mode="ataque">Ataque</button>
+            <button type="button" class="seg-btn" data-mode="defesa">Defesa</button>
+          </div>
+          <button type="button" class="btn-ghost" id="clearPathBtn">Limpar seta</button>
+        </div>
       </div>
-      <div class="opp-controls">
-        <button type="button" class="btn-ghost" id="clearPathBtn">Limpar seta</button>
-        <button type="button" class="btn-ghost" id="addOppBtn">+ Adversário</button>
-        <button type="button" class="btn-ghost" id="removeOppBtn" disabled>Remover selecionado</button>
+      <div class="ctrl-group">
+        <span class="ctrl-label">Adversários</span>
+        <div class="opp-controls">
+          <button type="button" class="btn-ghost btn-ghost--add" id="addOppBtn">+ 1 Adversário</button>
+          <button type="button" class="btn-ghost btn-ghost--add" id="addTeamBtn">+ Equipa (7)</button>
+          <button type="button" class="btn-ghost" id="removeOppBtn" disabled>Remover selecionado</button>
+        </div>
       </div>
     </div>
 
@@ -523,12 +887,14 @@
       <li><span>AD</span>Avançado Direito</li>
       <li><span style="background:var(--danger);color:#fff;">ADV</span>Adversário</li>
     </ul>
+  </div>
   </section>
 
-  <section class="rules">
-    <div class="section-head">
+  <section class="tab-panel rules" id="panel-regras" role="tabpanel" aria-labelledby="tab-regras" data-tab="regras" hidden>
+    <div class="panel-head">
+      <p class="panel-kicker">Regras</p>
       <h2>Regras em campo</h2>
-      <p class="section-sub">Toca num cartão para veres a zona correspondente no campo.</p>
+      <p class="section-sub">Toca num cartão para marcares a zona correspondente no separador Campo.</p>
     </div>
     <div class="rule-grid">
       <button type="button" class="rule-card" data-zone="meio">
@@ -609,23 +975,96 @@
     </div>
   </section>
 
-  <section class="quiz" aria-label="Treino de decisões">
-    <div class="quiz-head">
-      <h2>Treino de decisões</h2>
+  <section class="tab-panel quiz" id="panel-treino" role="tabpanel" aria-labelledby="tab-treino" data-tab="treino" hidden>
+    <div class="panel-head quiz-head">
+      <p class="panel-kicker">Treino</p>
+      <h2>Treino de Decisões</h2>
       <p class="section-sub">15 situações de jogo. Escolhe o que farias em cada uma.</p>
       <p class="quiz-best" id="quizBest" hidden></p>
     </div>
     <div class="dots" id="quizDots" aria-hidden="true"></div>
     <div class="quiz-body" id="quizBody" aria-live="polite"></div>
+    <p class="foot">Revê antes de cada jogo. Cinco minutos chegam.</p>
   </section>
 
-  <p class="foot">Revê antes de cada jogo. Cinco minutos chegam.</p>
-
 </div>
+
+<nav class="tabbar" aria-label="Secções">
+  <div class="tabbar-inner" role="tablist">
+    <button type="button" class="tab-btn" role="tab" id="tab-campo" data-tab="campo" aria-controls="panel-campo">
+      <span class="tab-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><line x1="4" y1="12" x2="20" y2="12"/><circle cx="12" cy="12" r="2.6"/><path d="M9 3v2.5h6V3M9 21v-2.5h6V21"/></svg>
+      </span>
+      <span class="tab-label">Campo</span>
+    </button>
+    <button type="button" class="tab-btn" role="tab" id="tab-regras" data-tab="regras" aria-controls="panel-regras">
+      <span class="tab-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8.5l1.3 1.3L11.6 7.5M8 14.5l1.3 1.3 2.3-2.3"/><line x1="13.8" y1="9" x2="16.5" y2="9"/><line x1="13.8" y1="15" x2="16.5" y2="15"/></svg>
+      </span>
+      <span class="tab-label">Regras</span>
+    </button>
+    <button type="button" class="tab-btn" role="tab" id="tab-treino" data-tab="treino" aria-controls="panel-treino">
+      <span class="tab-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.8"/><circle cx="12" cy="12" r="1.2"/></svg>
+      </span>
+      <span class="tab-label">Treino de Decisões</span>
+    </button>
+  </div>
+</nav>
 
 <script>
 (function(){
   "use strict";
+
+  /* ================= Tabs ================= */
+  var TABS = ['campo', 'regras', 'treino'];
+  var tabButtons = document.querySelectorAll('.tab-btn');
+  var tabPanels = document.querySelectorAll('.tab-panel');
+  var currentTab = null;
+
+  function setTab(tab, opts){
+    if(TABS.indexOf(tab) === -1) tab = 'campo';
+    var animate = !(opts && opts.initial) && currentTab !== null && currentTab !== tab;
+    currentTab = tab;
+    tabButtons.forEach(function(b){
+      var isActive = b.dataset.tab === tab;
+      b.classList.toggle('active', isActive);
+      b.setAttribute('aria-selected', isActive ? 'true' : 'false');
+      b.tabIndex = isActive ? 0 : -1;
+    });
+    tabPanels.forEach(function(p){
+      var isActive = p.dataset.tab === tab;
+      p.hidden = !isActive;
+      p.classList.remove('is-entering');
+      if(isActive && animate){
+        void p.offsetWidth;
+        p.classList.add('is-entering');
+      }
+    });
+    try{ localStorage.setItem('bussola-tab', tab); }catch(e){}
+    if(animate) window.scrollTo(0, 0);
+  }
+  tabButtons.forEach(function(b, i){
+    b.addEventListener('click', function(){ setTab(b.dataset.tab); });
+    b.addEventListener('keydown', function(e){
+      var dir = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+      if(!dir) return;
+      e.preventDefault();
+      var next = tabButtons[(i + dir + tabButtons.length) % tabButtons.length];
+      setTab(next.dataset.tab);
+      next.focus();
+    });
+  });
+  tabPanels.forEach(function(p){
+    p.addEventListener('animationend', function(e){
+      if(e.target === p) p.classList.remove('is-entering');
+    });
+  });
+  (function(){
+    var savedTab = 'campo';
+    try{ savedTab = localStorage.getItem('bussola-tab') || 'campo'; }catch(e){}
+    setTab(savedTab, {initial:true});
+  })();
 
   /* ================= Side toggle ================= */
   var sideButtons = document.querySelectorAll('#sideToggle .seg-btn');
@@ -711,6 +1150,7 @@
 
   var boardState;
   var oppSeq = 0;
+  var freshOpp = {};
 
   function persistBoard(){
     try{ localStorage.setItem('bussola-board', JSON.stringify(boardState)); }catch(e){}
@@ -756,7 +1196,7 @@
     opponentsLayer.innerHTML = '';
     boardState.opponents.forEach(function(o){
       var g = document.createElementNS('http://www.w3.org/2000/svg','g');
-      g.setAttribute('class', 'marker draggable opponent' + (boardState.selected === o.id ? ' selected' : ''));
+      g.setAttribute('class', 'marker draggable opponent' + (boardState.selected === o.id ? ' selected' : '') + (freshOpp[o.id] !== undefined ? ' is-new' : ''));
       g.setAttribute('id', 'opp-' + o.id);
       g.setAttribute('data-kind', 'opp');
       g.setAttribute('data-key', o.id);
@@ -772,9 +1212,15 @@
       label.setAttribute('class','opp-label'); label.setAttribute('dy','3');
       label.textContent = 'ADV';
 
-      g.appendChild(ring); g.appendChild(circle); g.appendChild(label);
+      var body = document.createElementNS('http://www.w3.org/2000/svg','g');
+      body.setAttribute('class','opp-body');
+      if(freshOpp[o.id]) body.style.animationDelay = freshOpp[o.id] + 'ms';
+
+      body.appendChild(ring); body.appendChild(circle); body.appendChild(label);
+      g.appendChild(body);
       opponentsLayer.appendChild(g);
     });
+    freshOpp = {};
   }
 
   function updateRemoveBtn(){
@@ -788,7 +1234,36 @@
     var x = clamp(200 + ((n % 3) - 1) * 60, 34, 366);
     var y = clamp(260 + Math.floor(n / 3) * 50, 34, 586);
     boardState.opponents.push({id:id, x:x, y:y});
+    freshOpp[id] = 0;
     renderOpponents();
+    updatePathForMode();
+    persistBoard();
+  }
+
+  /* Equipa adversária completa: 3-1-2 espelhado em torno do meio-campo (y' = 632 - y) */
+  var MIRROR_FORMATION = [
+    {x:200, y:67},   /* espelho do GR */
+    {x:200, y:162},  /* espelho do DC */
+    {x:95,  y:192},  /* espelho do LE */
+    {x:305, y:192},  /* espelho do LD */
+    {x:200, y:292},  /* espelho do MC */
+    {x:112, y:442},  /* espelho do AE */
+    {x:288, y:442}   /* espelho do AD */
+  ];
+
+  function addTeam(){
+    var stamp = Date.now();
+    boardState.opponents = [];
+    boardState.selected = null;
+    freshOpp = {};
+    MIRROR_FORMATION.forEach(function(p, i){
+      oppSeq++;
+      var id = 'o' + oppSeq + '-' + stamp;
+      boardState.opponents.push({id:id, x:p.x, y:p.y});
+      freshOpp[id] = i * 35;
+    });
+    renderOpponents();
+    updateRemoveBtn();
     updatePathForMode();
     persistBoard();
   }
@@ -819,6 +1294,7 @@
 
   var clearPathBtn = document.getElementById('clearPathBtn');
   addOppBtn.addEventListener('click', addOpponent);
+  document.getElementById('addTeamBtn').addEventListener('click', addTeam);
   removeOppBtn.addEventListener('click', removeSelectedOpponent);
   clearPathBtn.addEventListener('click', function(){
     boardState.mode = null;
@@ -1240,7 +1716,7 @@
     }else if(nota >= 7){
       tier = 'Estás quase lá. Revê as sugestões em baixo antes do próximo treino.';
     }else{
-      tier = 'Vale a pena rever as regras em campo, aqui em cima, antes do próximo jogo.';
+      tier = 'Vale a pena rever as regras em campo, no separador Regras, antes do próximo jogo.';
     }
 
     var missedHtml = '';
