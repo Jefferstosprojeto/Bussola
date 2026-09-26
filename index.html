@@ -836,7 +836,7 @@
         <rect x="16" y="408" width="368" height="196" rx="10" class="pos-zone" data-key="dc"></rect>
         <rect x="18" y="16" width="86" height="588" rx="10" class="pos-zone" data-key="le"></rect>
         <rect x="296" y="16" width="86" height="588" rx="10" class="pos-zone" data-key="ld"></rect>
-        <rect x="104" y="16" width="192" height="588" rx="10" class="pos-zone" data-key="mc"></rect>
+        <rect x="104" y="166" width="192" height="438" rx="10" class="pos-zone" data-key="mc"></rect>
         <rect x="16" y="16" width="184" height="444" rx="10" class="pos-zone" data-key="ae"></rect>
         <rect x="200" y="16" width="184" height="444" rx="10" class="pos-zone" data-key="ad"></rect>
       </g>
@@ -1071,6 +1071,10 @@
     });
     try{ localStorage.setItem('bussola-tab', tab); }catch(e){}
     if(animate) window.scrollTo(0, 0);
+    if(tab === 'treino' && animate && quizState && (quizState.done || (quizState.index === 0 && quizState.answers.length === 0))){
+      quizState = newQuizState();
+      renderQuizAll();
+    }
   }
   tabButtons.forEach(function(b, i){
     b.addEventListener('click', function(){ setTab(b.dataset.tab); });
