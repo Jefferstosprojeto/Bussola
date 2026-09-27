@@ -435,6 +435,48 @@
     .opponent.is-new .opp-body, .opponent.selected .sel-ring{animation:none;}
   }
 
+  /* Bola arrastável (sistema independente do modo Ataque/Defesa) */
+  .ball-hit{fill:transparent;}
+  .ball-circle{
+    fill:url(#markerGrad);
+    stroke:var(--marker-ink);
+    stroke-width:1.1;
+    filter:drop-shadow(0 2px 1.6px rgba(0,0,0,.45));
+  }
+  .ball-patch{fill:var(--marker-ink);}
+  .ball-seam{fill:none;stroke:var(--marker-ink);stroke-width:.9;stroke-linecap:round;}
+  .ball-body{transform-box:fill-box;transform-origin:center;}
+  .ball.is-goal .ball-body{animation:ballGoal .5s cubic-bezier(.22,1,.36,1) both;}
+  @keyframes ballGoal{
+    0%{transform:scale(1);}
+    40%{transform:scale(1.45);}
+    100%{transform:scale(1);}
+  }
+  .ball-target{fill:none;stroke:var(--good);stroke-width:2;stroke-dasharray:3 3;}
+  #pathLayer .ball-hint{filter:drop-shadow(0 0 1.3px rgba(255,255,255,.95)) drop-shadow(0 1px 1px rgba(0,0,0,.35));}
+  .ball-caption{
+    font-size:15px;
+    line-height:1.45;
+    color:var(--ink);
+    background:var(--surface-2);
+    border-left:3px solid var(--good);
+    border-radius:10px;
+    padding:10px 14px;
+  }
+  .ball-caption[hidden]{display:none;}
+  .ball-caption.is-goal{
+    background:var(--amber);
+    color:var(--amber-ink);
+    border-left-color:var(--amber-ink);
+    font:700 22px 'Oswald',sans-serif;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    text-align:center;
+  }
+  @media (prefers-reduced-motion:reduce){
+    .ball.is-goal .ball-body{animation:none;}
+  }
+
   .path-line{fill:none;stroke-width:3;stroke-linecap:round;}
   .path-line.dashed{stroke-dasharray:7 6;}
   .path-good{stroke:var(--good);}
@@ -753,6 +795,7 @@
           <stop offset="0" class="stop-opp-hi"/>
           <stop offset="1" class="stop-opp-lo"/>
         </radialGradient>
+        <clipPath id="ballClip"><circle r="8.4"/></clipPath>
         <marker id="arrowGood" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
           <path d="M0,0 L10,5 L0,10 z" class="arrow-fill-good"/>
         </marker>
@@ -877,6 +920,27 @@
       </g>
 
       <g id="opponentsLayer"></g>
+
+      <!-- Bola arrastável (posição efémera, não é guardada) -->
+      <g class="ball draggable" id="m-ball" data-kind="ball" data-key="ball" transform="translate(200,316)">
+        <g class="ball-body">
+          <circle r="16" class="ball-hit"/>
+          <circle r="9" class="ball-circle"/>
+          <g clip-path="url(#ballClip)">
+            <path id="ballPent" class="ball-patch" d="M0,-3.3 L3.14,-1.02 L1.94,2.67 L-1.94,2.67 L-3.14,-1.02Z"/>
+            <use href="#ballPent" transform="rotate(36) translate(0,-9.6)"/>
+            <use href="#ballPent" transform="rotate(108) translate(0,-9.6)"/>
+            <use href="#ballPent" transform="rotate(180) translate(0,-9.6)"/>
+            <use href="#ballPent" transform="rotate(252) translate(0,-9.6)"/>
+            <use href="#ballPent" transform="rotate(324) translate(0,-9.6)"/>
+            <path class="ball-seam" d="M0,-3.3 V-7"/>
+            <path class="ball-seam" d="M0,-3.3 V-7" transform="rotate(72)"/>
+            <path class="ball-seam" d="M0,-3.3 V-7" transform="rotate(144)"/>
+            <path class="ball-seam" d="M0,-3.3 V-7" transform="rotate(216)"/>
+            <path class="ball-seam" d="M0,-3.3 V-7" transform="rotate(288)"/>
+          </g>
+        </g>
+      </g>
     </svg>
 
     <p class="board-hint">Arrasta os bonecos para ajustar as posições. Adiciona adversários e escolhe Ataque ou Defesa para veres o caminho.</p>
@@ -903,6 +967,7 @@
     </div>
 
     <p class="pitch-caption" id="pathCaption" hidden></p>
+    <p class="ball-caption" id="ballCaption" aria-live="polite" hidden></p>
     <p class="pitch-caption" id="sideCaption"></p>
 
     <ul class="legend">
@@ -1202,6 +1267,7 @@
   function clamp(v,min,max){ return Math.max(min, Math.min(max, v)); }
 
   function setMarkerPos(kind, key, x, y){
+    if(kind === 'ball'){ setBallPos(x, y); return; }
     x = clamp(x, 34, 366);
     y = clamp(y, 34, 586);
     if(kind === 'own'){
@@ -1361,6 +1427,7 @@
     var g = e.target.closest ? e.target.closest('.draggable') : null;
     if(!g){ deselectOpponent(); return; }
     e.preventDefault();
+    if(g.dataset.kind === 'ball') cancelBallReturn();
     try{ g.setPointerCapture(e.pointerId); }catch(err){}
     dragging = { el:g, kind:g.dataset.kind, key:g.dataset.key, moved:false, startX:e.clientX, startY:e.clientY };
   });
@@ -1371,13 +1438,20 @@
     if(Math.abs(dx) > 3 || Math.abs(dy) > 3) dragging.moved = true;
     var p = toSvgPoint(e);
     setMarkerPos(dragging.kind, dragging.key, p.x, p.y);
+    if(dragging.kind === 'ball') return;
     if(!rafScheduled){
       rafScheduled = true;
-      requestAnimationFrame(function(){ rafScheduled = false; updatePathForMode(); });
+      requestAnimationFrame(function(){ rafScheduled = false; updatePathForMode(); drawBallHint(); });
     }
   });
   function endDrag(e){
     if(!dragging) return;
+    if(dragging.kind === 'ball'){
+      var wasMoved = dragging.moved;
+      dragging = null;
+      if(wasMoved) onBallDrop();
+      return;
+    }
     if(!dragging.moved && dragging.kind === 'opp'){
       toggleSelectOpponent(dragging.key);
     }else if(!dragging.moved && dragging.kind === 'own' && dragging.key !== 'gr'){
@@ -1385,6 +1459,7 @@
     }
     dragging = null;
     updatePathForMode();
+    drawBallHint();
     persistBoard();
   }
   svgEl.addEventListener('pointerup', endDrag);
@@ -1464,6 +1539,135 @@
       }
     }
   }
+
+  /* ================= Bola (sistema independente, posição efémera) ================= */
+  var ballEl = document.getElementById('m-ball');
+  var ballCaption = document.getElementById('ballCaption');
+  var BALL_HOME = {x:200, y:316};
+  var ballPos = {x:BALL_HOME.x, y:BALL_HOME.y};
+  var ballHintZone = null;   /* zona bruta: oppdef | mc | le | dc | ld | gr */
+  var ballGoalTimer = null;
+  var ballAnimFrame = null;
+
+  /* Alvos dados para quem joga AE; para AD espelha-se o x (x' = 400 - x), exceto oppdef */
+  var BALL_HINTS = {
+    gr:     { text:'A bola está no guarda-redes. Abre-te bem largo no teu corredor, para lhe dares linha de passe.', x:40,  y:230 },
+    dc:     { text:'A bola está na defesa central. Fica por dentro do teu marcador, pronto para receberes em profundidade.', x:90, y:230 },
+    same:   { text:'A bola está no teu lateral. Desce à linha e pede o um-dois.', x:40, y:300 },
+    other:  { text:'A bola está no lateral do lado contrário. Fecha para dentro e ocupa a área, pronto para o cruzamento.', x:170, y:120 },
+    mc:     { text:'A bola está no médio centro. Arranca para o espaço nas costas da defesa.', x:100, y:60 },
+    oppdef: { text:'A bola já está perto da baliza adversária. Ocupa a área, pronto para rematar ou para o passe atrasado.', x:200, y:50, noMirror:true }
+  };
+
+  function setBallPos(x, y){
+    ballPos = { x: clamp(x, 25, 375), y: clamp(y, 25, 595) };
+    ballEl.setAttribute('transform', 'translate(' + ballPos.x + ',' + ballPos.y + ')');
+  }
+
+  function classifyBallZone(p){
+    if(p.y < 160) return 'oppdef';
+    if(p.y < 380) return 'mc';
+    if(p.y < 520){
+      if(p.x < 150) return 'le';
+      if(p.x < 250) return 'dc';
+      return 'ld';
+    }
+    return 'gr';
+  }
+
+  function setBallCaption(text, isGoal){
+    ballCaption.classList.toggle('is-goal', !!isGoal);
+    if(text){ ballCaption.textContent = text; ballCaption.hidden = false; }
+    else{ ballCaption.hidden = true; ballCaption.textContent = ''; }
+  }
+
+  function removeBallHintShapes(){
+    var old = pathLayer.querySelectorAll('.ball-hint');
+    for(var i = 0; i < old.length; i++) old[i].parentNode.removeChild(old[i]);
+  }
+
+  /* Desenha (ou redesenha) a seta da bola a partir da posição atual do jogador ativo */
+  function drawBallHint(){
+    if(!ballHintZone){ removeBallHintShapes(); return; }
+    pathLayer.innerHTML = '';
+    setPathCaption('');
+    var isLeft = currentSide === 'esquerda';
+    var key = ballHintZone;
+    if(key === 'le') key = isLeft ? 'same' : 'other';
+    else if(key === 'ld') key = isLeft ? 'other' : 'same';
+    var hint = BALL_HINTS[key];
+    var target = { x: (isLeft || hint.noMirror) ? hint.x : 400 - hint.x, y: hint.y };
+    var origin = boardState.positions[isLeft ? 'ae' : 'ad'];
+
+    var before = pathLayer.childNodes.length;
+    pathLayer.appendChild(svgPath('circle', { cx: target.x, cy: target.y, r: 8, 'class': 'ball-target' }));
+    if(dist(origin, target) > 14) drawLine(origin, target, 'good', true);
+    for(var i = before; i < pathLayer.childNodes.length; i++){
+      pathLayer.childNodes[i].classList.add('ball-hint');
+    }
+    setBallCaption(hint.text, false);
+  }
+
+  function clearBallHint(){
+    ballHintZone = null;
+    removeBallHintShapes();
+    if(!ballCaption.classList.contains('is-goal')) setBallCaption('');
+  }
+
+  function cancelBallReturn(){
+    if(ballGoalTimer){ clearTimeout(ballGoalTimer); ballGoalTimer = null; }
+    if(ballAnimFrame){ cancelAnimationFrame(ballAnimFrame); ballAnimFrame = null; }
+    ballEl.classList.remove('is-goal');
+    if(ballCaption.classList.contains('is-goal')) setBallCaption('');
+  }
+
+  function animateBallHome(){
+    var from = {x:ballPos.x, y:ballPos.y};
+    var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var duration = reduce ? 0 : 450;
+    var start = null;
+    function finish(){
+      ballAnimFrame = null;
+      setBallPos(BALL_HOME.x, BALL_HOME.y);
+      ballEl.classList.remove('is-goal');
+      setBallCaption('');
+    }
+    if(!duration){ finish(); return; }
+    function step(ts){
+      if(start === null) start = ts;
+      var t = Math.min(1, (ts - start) / duration);
+      var k = 1 - Math.pow(1 - t, 3);
+      setBallPos(from.x + (BALL_HOME.x - from.x) * k, from.y + (BALL_HOME.y - from.y) * k);
+      if(t < 1) ballAnimFrame = requestAnimationFrame(step);
+      else finish();
+    }
+    ballAnimFrame = requestAnimationFrame(step);
+  }
+
+  function onBallDrop(){
+    /* A. Golo */
+    if(ballPos.x >= 150 && ballPos.x <= 250 && ballPos.y <= 40){
+      clearBallHint();
+      setBallCaption('Golo!', true);
+      ballEl.classList.remove('is-goal');
+      void ballEl.getBoundingClientRect();
+      ballEl.classList.add('is-goal');
+      ballGoalTimer = setTimeout(function(){
+        ballGoalTimer = null;
+        animateBallHome();
+      }, 1200);
+      return;
+    }
+    /* B. Dica por zona */
+    ballHintZone = classifyBallZone(ballPos);
+    drawBallHint();
+  }
+
+  /* Ataque / Defesa / Limpar seta: o updatePathForMode() já limpa o #pathLayer; aqui só se esquece a dica da bola */
+  modeButtons.forEach(function(b){ b.addEventListener('click', clearBallHint); });
+  clearPathBtn.addEventListener('click', clearBallHint);
+  /* Mudar de lado: reinterpreta a zona para o novo lado (listener corre depois do setSide) */
+  sideButtons.forEach(function(b){ b.addEventListener('click', drawBallHint); });
 
   /* ================= Quiz ================= */
   var questions = [
