@@ -455,6 +455,13 @@
   .ball-target{fill:none;stroke:var(--good);stroke-width:2;stroke-dasharray:3 3;}
   #pathLayer .ball-hint{filter:drop-shadow(0 0 1.3px rgba(255,255,255,.95)) drop-shadow(0 1px 1px rgba(0,0,0,.35));}
   .ball-caption{
+    position:fixed;
+    left:16px;
+    right:16px;
+    bottom:calc(78px + env(safe-area-inset-bottom));
+    z-index:15;
+    max-width:608px;
+    margin:0 auto;
     font-size:15px;
     line-height:1.45;
     color:var(--ink);
@@ -462,6 +469,7 @@
     border-left:3px solid var(--good);
     border-radius:10px;
     padding:10px 14px;
+    box-shadow:var(--shadow);
   }
   .ball-caption[hidden]{display:none;}
   .ball-caption.is-goal{
@@ -962,6 +970,12 @@
           <button type="button" class="btn-ghost btn-ghost--add" id="addOppBtn">+ 1 Adversário</button>
           <button type="button" class="btn-ghost btn-ghost--add" id="addTeamBtn">+ Equipa (7)</button>
           <button type="button" class="btn-ghost" id="removeOppBtn" disabled>Remover selecionado</button>
+        </div>
+      </div>
+      <div class="ctrl-group">
+        <span class="ctrl-label">Jogada</span>
+        <div class="ctrl-row">
+          <button type="button" class="btn-ghost" id="simulatePlayBtn">Simular Jogada</button>
         </div>
       </div>
     </div>
@@ -1615,47 +1629,74 @@
   }
 
   function cancelBallReturn(){
+    cancelSimulation();
     if(ballGoalTimer){ clearTimeout(ballGoalTimer); ballGoalTimer = null; }
     if(ballAnimFrame){ cancelAnimationFrame(ballAnimFrame); ballAnimFrame = null; }
     ballEl.classList.remove('is-goal');
     if(ballCaption.classList.contains('is-goal')) setBallCaption('');
   }
 
-  function animateBallHome(){
-    var from = {x:ballPos.x, y:ballPos.y};
-    var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    var duration = reduce ? 0 : 450;
+  function prefersReducedMotion(){
+    return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  }
+
+  /* Anima a bola ao longo de um percurso: pointAt(k) devolve o ponto para k em [0,1] (easing ease-out cúbico) */
+  function animateBallAlong(pointAt, duration, onDone){
+    if(ballAnimFrame){ cancelAnimationFrame(ballAnimFrame); ballAnimFrame = null; }
     var start = null;
     function finish(){
       ballAnimFrame = null;
-      setBallPos(BALL_HOME.x, BALL_HOME.y);
-      ballEl.classList.remove('is-goal');
-      setBallCaption('');
+      var p = pointAt(1);
+      setBallPos(p.x, p.y);
+      if(onDone) onDone();
     }
     if(!duration){ finish(); return; }
     function step(ts){
       if(start === null) start = ts;
       var t = Math.min(1, (ts - start) / duration);
       var k = 1 - Math.pow(1 - t, 3);
-      setBallPos(from.x + (BALL_HOME.x - from.x) * k, from.y + (BALL_HOME.y - from.y) * k);
+      var p = pointAt(k);
+      setBallPos(p.x, p.y);
       if(t < 1) ballAnimFrame = requestAnimationFrame(step);
       else finish();
     }
     ballAnimFrame = requestAnimationFrame(step);
   }
 
+  /* Anima a bola em linha reta da posição atual até target */
+  function animateBallTo(target, duration, onDone){
+    var from = {x:ballPos.x, y:ballPos.y};
+    animateBallAlong(function(k){
+      if(k >= 1) return {x:target.x, y:target.y};
+      return { x: from.x + (target.x - from.x) * k, y: from.y + (target.y - from.y) * k };
+    }, duration, onDone);
+  }
+
+  function animateBallHome(onHome){
+    animateBallTo(BALL_HOME, prefersReducedMotion() ? 0 : 450, function(){
+      ballEl.classList.remove('is-goal');
+      setBallCaption('');
+      if(onHome) onHome();
+    });
+  }
+
+  /* Celebração de golo (usada no arrasto manual e na jogada simulada) */
+  function celebrateGoal(onHome){
+    clearBallHint();
+    setBallCaption('Golo!', true);
+    ballEl.classList.remove('is-goal');
+    void ballEl.getBoundingClientRect();
+    ballEl.classList.add('is-goal');
+    ballGoalTimer = setTimeout(function(){
+      ballGoalTimer = null;
+      animateBallHome(onHome);
+    }, 1200);
+  }
+
   function onBallDrop(){
     /* A. Golo */
     if(ballPos.x >= 150 && ballPos.x <= 250 && ballPos.y <= 40){
-      clearBallHint();
-      setBallCaption('Golo!', true);
-      ballEl.classList.remove('is-goal');
-      void ballEl.getBoundingClientRect();
-      ballEl.classList.add('is-goal');
-      ballGoalTimer = setTimeout(function(){
-        ballGoalTimer = null;
-        animateBallHome();
-      }, 1200);
+      celebrateGoal();
       return;
     }
     /* B. Dica por zona */
@@ -1668,6 +1709,128 @@
   clearPathBtn.addEventListener('click', clearBallHint);
   /* Mudar de lado: reinterpreta a zona para o novo lado (listener corre depois do setSide) */
   sideButtons.forEach(function(b){ b.addEventListener('click', drawBallHint); });
+
+  /* ================= Simular Jogada (lateral -> avançado -> baliza, sozinha) ================= */
+  var simulatePlayBtn = document.getElementById('simulatePlayBtn');
+  var SIM_PAUSE = 450;
+  var simTimers = [];
+  var simActive = false;
+
+  function removeSimShapes(){
+    var old = pathLayer.querySelectorAll('.sim-path');
+    for(var i = 0; i < old.length; i++) old[i].parentNode.removeChild(old[i]);
+  }
+
+  /* Desenha no #pathLayer e marca o que foi desenhado como pertencente à simulação */
+  function simDraw(fn){
+    var before = pathLayer.childNodes.length;
+    fn();
+    for(var i = before; i < pathLayer.childNodes.length; i++){
+      pathLayer.childNodes[i].classList.add('sim-path');
+    }
+  }
+
+  function simLater(fn, ms){
+    simTimers.push(setTimeout(function(){ if(simActive) fn(); }, ms));
+  }
+
+  /* Cancela a jogada automática (temporizadores, animação da bola, linhas e legenda dela) */
+  function cancelSimulation(){
+    simTimers.forEach(function(id){ clearTimeout(id); });
+    simTimers = [];
+    removeSimShapes();
+    if(!simActive) return;
+    simActive = false;
+    if(ballAnimFrame){ cancelAnimationFrame(ballAnimFrame); ballAnimFrame = null; }
+    if(!ballCaption.classList.contains('is-goal')) setBallCaption('');
+  }
+
+  function quadPoint(a, m, b, k){
+    var u = 1 - k;
+    return { x: u*u*a.x + 2*u*k*m.x + k*k*b.x, y: u*u*a.y + 2*u*k*m.y + k*k*b.y };
+  }
+
+  function startSimulation(){
+    cancelBallReturn();   /* também cancela uma simulação anterior e um golo/regresso a decorrer */
+    clearBallHint();
+    pathLayer.innerHTML = '';
+    setPathCaption('');
+    simActive = true;
+
+    var reduce = prefersReducedMotion();
+    var fwdKey = currentSide === 'esquerda' ? 'ae' : 'ad';
+    var latKey = fwdKey === 'ae' ? 'le' : 'ld';
+
+    function dur(ms){ return reduce ? 0 : ms; }
+    /* Com movimento reduzido a bola salta de imediato; a pausa absorve o tempo da animação para dar para ler */
+    function pauseAfter(ms){ return reduce ? SIM_PAUSE + ms : SIM_PAUSE; }
+
+    function passTo(key, caption, ms, next){
+      var from = {x:ballPos.x, y:ballPos.y};
+      var p = boardState.positions[key];
+      var target = {x:p.x, y:p.y};
+      simDraw(function(){ drawLine(from, target, 'good', true); });
+      setBallCaption(caption, false);
+      animateBallTo(target, dur(ms), function(){
+        if(!simActive) return;
+        pathLayer.innerHTML = '';
+        simLater(next, pauseAfter(ms));
+      });
+    }
+
+    function shoot(){
+      var o = boardState.positions[fwdKey];
+      var origin = {x:o.x, y:o.y};
+      var goal = {x:200, y:34};
+      var inWay = boardState.opponents.filter(function(o){
+        return o.y < origin.y - 10 && o.y > goal.y + 10 && Math.abs(o.x - lerpX(origin, goal, o.y)) < 90;
+      }).sort(function(a,b){ return b.y - a.y; });
+
+      var pointAt, ms;
+      if(inWay.length === 0){
+        simDraw(function(){ drawLine(origin, goal, 'good', false); });
+        setBallCaption('Caminho livre. Vai direto ao remate.', false);
+        pointAt = function(k){ return { x: origin.x + (goal.x - origin.x) * k, y: origin.y + (goal.y - origin.y) * k }; };
+        ms = 900;
+      }else if(inWay.length === 1){
+        var def = inWay[0];
+        var bend = (def.x >= origin.x) ? -70 : 70;
+        var midY = (origin.y + goal.y) / 2;
+        var mid = { x: lerpX(origin, goal, midY) + bend, y: midY };
+        simDraw(function(){ drawCurve(origin, mid, goal, 'amber', false); });
+        setBallCaption('1x1: finta o defesa e segue para o remate.', false);
+        pointAt = function(k){ return quadPoint(origin, mid, goal, k); };
+        ms = 1000;
+      }else{
+        var midY2 = (origin.y + goal.y) / 2;
+        var midLeft = { x: lerpX(origin, goal, midY2) - 70, y: midY2 };
+        var midRight = { x: lerpX(origin, goal, midY2) + 70, y: midY2 };
+        simDraw(function(){
+          drawCurve(origin, midLeft, goal, 'amber', true);
+          drawCurve(origin, midRight, goal, 'amber', true);
+        });
+        setBallCaption('1x2: atrai um defensor, decide no último instante, remate ou assistência.', false);
+        pointAt = function(k){ return quadPoint(origin, midLeft, goal, k); };
+        ms = 1000;
+      }
+
+      animateBallAlong(pointAt, dur(ms), function(){
+        if(!simActive) return;
+        simActive = false;
+        celebrateGoal(removeSimShapes);
+      });
+    }
+
+    passTo(latKey, 'O lateral recebe a bola.', 650, function(){
+      passTo(fwdKey, 'Passe para o avançado.', 650, shoot);
+    });
+  }
+
+  simulatePlayBtn.addEventListener('click', startSimulation);
+  /* Ataque / Defesa / Limpar seta / mudar de lado: param a jogada automática */
+  modeButtons.forEach(function(b){ b.addEventListener('click', cancelSimulation); });
+  clearPathBtn.addEventListener('click', cancelSimulation);
+  sideButtons.forEach(function(b){ b.addEventListener('click', cancelSimulation); });
 
   /* ================= Quiz ================= */
   var questions = [
