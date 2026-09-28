@@ -955,6 +955,14 @@
 
     <div class="board-controls">
       <div class="ctrl-group">
+        <span class="ctrl-label">Simulações</span>
+        <div class="ctrl-row">
+          <button type="button" class="btn-ghost" id="simulatePlayBtn">Jogada: Lateral</button>
+          <button type="button" class="btn-ghost" id="simulatePlaySweeperBtn">Jogada: Zagueiro</button>
+          <button type="button" class="btn-ghost" id="simulateDefenseBtn">Simular Defesa</button>
+        </div>
+      </div>
+      <div class="ctrl-group">
         <span class="ctrl-label">Seta tática</span>
         <div class="ctrl-row">
           <div class="segmented" role="group" aria-label="Modo tático" id="modeToggle">
@@ -970,14 +978,6 @@
           <button type="button" class="btn-ghost btn-ghost--add" id="addOppBtn">+ 1 Adversário</button>
           <button type="button" class="btn-ghost btn-ghost--add" id="addTeamBtn">+ Equipa (7)</button>
           <button type="button" class="btn-ghost" id="removeOppBtn" disabled>Remover selecionado</button>
-        </div>
-      </div>
-      <div class="ctrl-group">
-        <span class="ctrl-label">Simulações</span>
-        <div class="ctrl-row">
-          <button type="button" class="btn-ghost" id="simulatePlayBtn">Jogada: Lateral</button>
-          <button type="button" class="btn-ghost" id="simulatePlaySweeperBtn">Jogada: Zagueiro</button>
-          <button type="button" class="btn-ghost" id="simulateDefenseBtn">Simular Defesa</button>
         </div>
       </div>
     </div>
@@ -1314,7 +1314,8 @@
       g.setAttribute('id', 'opp-' + o.id);
       g.setAttribute('data-kind', 'opp');
       g.setAttribute('data-key', o.id);
-      g.setAttribute('transform', 'translate(' + o.x + ',' + o.y + ')');
+      var vp = oppDisplaced[o.id] || o;   /* se uma simulação o tem deslocado, mantém a posição visual */
+      g.setAttribute('transform', 'translate(' + vp.x + ',' + vp.y + ')');
 
       var ring = document.createElementNS('http://www.w3.org/2000/svg','circle');
       ring.setAttribute('r','17'); ring.setAttribute('class','sel-ring');
@@ -1713,7 +1714,7 @@
   /* Mudar de lado: reinterpreta a zona para o novo lado (listener corre depois do setSide) */
   sideButtons.forEach(function(b){ b.addEventListener('click', drawBallHint); });
 
-  /* ================= Simular Jogada (lateral -> avançado -> baliza, sozinha) ================= */
+  /* ================= Simulações: infraestrutura comum (e botão Jogada: Lateral) ================= */
   var simulatePlayBtn = document.getElementById('simulatePlayBtn');
   var SIM_PAUSE = 450;
   var simTimers = [];
@@ -1792,7 +1793,69 @@
     animateMarkersTo(keys.map(function(k){ return { key:k, to:boardState.positions[k] }; }), duration, onDone);
   }
 
-  /* Corte seco: para a animação dos bonecos e repõe no sítio gravado todos os que estavam deslocados */
+  /* --- Adversários deslocados só visualmente (paralelo aos bonecos próprios; nunca tocam em boardState.opponents) --- */
+  var oppAnimFrame = null;
+  var oppDisplaced = {};     /* id -> posição visual atual {x,y} dos adversários fora do sítio gravado */
+
+  function oppStored(id){
+    return boardState.opponents.filter(function(o){ return o.id === id; })[0] || null;
+  }
+
+  function setOppVisual(id, p){
+    var el = document.getElementById('opp-' + id);
+    if(el) el.setAttribute('transform', 'translate(' + p.x + ',' + p.y + ')');
+  }
+
+  function oppVisualPos(id){
+    var p = oppDisplaced[id] || oppStored(id);
+    return p ? {x:p.x, y:p.y} : null;
+  }
+
+  /* moves = [{id, to}]; parte da posição visual atual (ease-out cúbico) */
+  function animateOpponentsTo(moves, duration, onDone){
+    if(oppAnimFrame){ cancelAnimationFrame(oppAnimFrame); oppAnimFrame = null; }
+    var list = moves.map(function(m){ return { id:m.id, from:oppVisualPos(m.id), to:{x:m.to.x, y:m.to.y} }; })
+                    .filter(function(m){ return !!m.from; });
+    function place(k){
+      list.forEach(function(m){
+        var p = { x: m.from.x + (m.to.x - m.from.x) * k, y: m.from.y + (m.to.y - m.from.y) * k };
+        oppDisplaced[m.id] = p;
+        setOppVisual(m.id, p);
+      });
+    }
+    function finish(){
+      oppAnimFrame = null;
+      place(1);
+      list.forEach(function(m){
+        var s = oppStored(m.id);
+        if(!s || (s.x === m.to.x && s.y === m.to.y)) delete oppDisplaced[m.id];
+      });
+      if(onDone) onDone();
+    }
+    if(!duration){ finish(); return; }
+    var start = null;
+    function step(ts){
+      if(start === null) start = ts;
+      var t = Math.min(1, (ts - start) / duration);
+      place(1 - Math.pow(1 - t, 3));
+      if(t < 1) oppAnimFrame = requestAnimationFrame(step);
+      else finish();
+    }
+    oppAnimFrame = requestAnimationFrame(step);
+  }
+
+  /* Anima de volta às posições gravadas todos os adversários deslocados (ignora os que entretanto foram removidos) */
+  function animateOpponentsHome(duration, onDone){
+    var moves = [];
+    Object.keys(oppDisplaced).forEach(function(id){
+      var s = oppStored(id);
+      if(s) moves.push({ id:id, to:{x:s.x, y:s.y} });
+      else delete oppDisplaced[id];
+    });
+    animateOpponentsTo(moves, duration, onDone);
+  }
+
+  /* Corte seco: para a animação dos bonecos (próprios e adversários) e repõe no sítio gravado todos os deslocados */
   function restoreSimMarkers(){
     if(markerAnimFrame){ cancelAnimationFrame(markerAnimFrame); markerAnimFrame = null; }
     Object.keys(simDisplaced).forEach(function(key){
@@ -1800,6 +1863,12 @@
       if(s) setMarkerVisual(key, s);
     });
     simDisplaced = {};
+    if(oppAnimFrame){ cancelAnimationFrame(oppAnimFrame); oppAnimFrame = null; }
+    Object.keys(oppDisplaced).forEach(function(id){
+      var s = oppStored(id);
+      if(s) setOppVisual(id, s);
+    });
+    oppDisplaced = {};
   }
 
   /* Cancela a simulação a decorrer (temporizadores, animações da bola e dos bonecos, linhas e legenda dela) */
@@ -1820,49 +1889,163 @@
     return { x: u*u*a.x + 2*u*k*m.x + k*k*b.x, y: u*u*a.y + 2*u*k*m.y + k*k*b.y };
   }
 
+  /* ================= Jogada: Lateral (três jogadas seguidas num só toque) =================
+     1. corrida nas costas da defesa -> intermediária -> remate
+     2. corrida nas costas -> fundo -> corte para o lado oposto -> remate
+     3. corrida nas costas -> fundo -> cruzamento para o segundo avançado -> remate
+     Tudo visual: boardState e persistBoard nunca são tocados. Pontos dados para o AE; AD espelha x' = 400 - x. */
   function startSimulation(){
-    cancelBallReturn();   /* também cancela uma simulação anterior e um golo/regresso a decorrer */
-    clearBallHint();
-    pathLayer.innerHTML = '';
-    setPathCaption('');
-    simActive = true;
-
+    var runId = beginSimulation();
     var reduce = prefersReducedMotion();
-    var fwdKey = currentSide === 'esquerda' ? 'ae' : 'ad';
-    var latKey = fwdKey === 'ae' ? 'le' : 'ld';
+    var isLeft = currentSide === 'esquerda';
+    var fwdKey = isLeft ? 'ae' : 'ad';
+    var latKey = isLeft ? 'le' : 'ld';
+    var otherFwdKey = isLeft ? 'ad' : 'ae';
+    function side(p){ return isLeft ? {x:p.x, y:p.y} : {x:400 - p.x, y:p.y}; }
+    var wide = side({x:30, y:140});       /* receção larga, nas costas da defesa */
+    var byline = side({x:25, y:40});      /* fundo */
+    var cutIn = side({x:230, y:95});      /* corte para o lado oposto */
+    var midfield = side({x:150, y:305});  /* intermediária (a mesma da Jogada: Zagueiro) */
+    var strikeZone = {x:200, y:55};       /* zona de remate do segundo avançado (central) */
+    var goal = {x:200, y:34};
+    var BETWEEN_PLAYS = 650;
 
     function dur(ms){ return reduce ? 0 : ms; }
-    /* Com movimento reduzido a bola salta de imediato; a pausa absorve o tempo da animação para dar para ler */
-    function pauseAfter(ms){ return reduce ? SIM_PAUSE + ms : SIM_PAUSE; }
+    /* Com movimento reduzido tudo salta de imediato; a pausa absorve o tempo da animação para dar para ler */
+    function pause(base, ms){ return reduce ? base + ms : base; }
+    function alive(){ return simActive && runId === simRunId; }
+    /* Junta n animações paralelas: next corre quando todas acabarem (e só se a sequência ainda for esta) */
+    function join(n, next){
+      var left = n;
+      return function(){ if(--left === 0 && alive()) next(); };
+    }
 
-    function passTo(key, caption, ms, next){
+    /* Bola em linha reta até target, com seta tracejada; carrierKey (opcional) é o avançado que a conduz */
+    function moveBall(target, caption, ms, carrierKey, afterPause, next){
       var from = {x:ballPos.x, y:ballPos.y};
-      var p = boardState.positions[key];
-      var target = {x:p.x, y:p.y};
       simDraw(function(){ drawLine(from, target, 'good', true); });
       setBallCaption(caption, false);
-      animateBallTo(target, dur(ms), function(){
-        if(!simActive) return;
-        pathLayer.innerHTML = '';
-        simLater(next, pauseAfter(ms));
+      var done = join(carrierKey ? 2 : 1, function(){
+        removeSimShapes();
+        simLater(next, pause(afterPause, ms));
+      });
+      animateBallTo(target, dur(ms), done);
+      if(carrierKey) animateMarkersTo([{ key:carrierKey, to:target }], dur(ms), done);
+    }
+
+    /* Arranque: a defesa adversária recua (se houver adversários) */
+    function retreatDefence(next){
+      var opps = boardState.opponents;
+      if(!opps || !opps.length){ next(); return; }
+      setBallCaption('A defesa recua.', false);
+      animateOpponentsTo(opps.map(function(o){
+        return { id:o.id, to:{ x:o.x, y:Math.min(o.y, Math.max(o.y - 70, 20)) } };
+      }), dur(700), function(){
+        if(!alive()) return;
+        simLater(next, pause(300, 700));
       });
     }
 
-    function shoot(){
-      var o = boardState.positions[fwdKey];
-      simShootFrom({x:o.x, y:o.y}, dur, function(){ celebrateGoal(removeSimShapes); });
+    /* Troço comum às três jogadas: o avançado arranca para a receção larga enquanto a bola chega ao lateral;
+       depois o lateral passa para lá */
+    function runInBehind(next){
+      var lat = boardState.positions[latKey];
+      setBallCaption('O avançado ganha profundidade nas costas da defesa.', false);
+      var done = join(2, function(){
+        simLater(function(){
+          moveBall(wide, 'O lateral encontra o avançado.', 650, null, SIM_PAUSE, next);
+        }, pause(250, 650));
+      });
+      animateMarkersTo([{ key:fwdKey, to:wide }], dur(650), done);
+      animateBallTo({x:lat.x, y:lat.y}, dur(650), done);
     }
 
-    passTo(latKey, 'O lateral recebe a bola.', 650, function(){
-      passTo(fwdKey, 'Passe para o avançado.', 650, shoot);
-    });
+    /* Golo: celebra, a bola volta ao centro, os bonecos indicados voltam ao sítio e só então segue */
+    function afterGoal(keysHome, next){
+      simActive = false;   /* como nas outras jogadas: durante a celebração a bola termina sempre o regresso */
+      celebrateGoal(function(){
+        removeSimShapes();
+        if(runId !== simRunId) return;   /* entretanto cancelada: os bonecos já foram repostos */
+        simActive = true;
+        animateMarkersHome(keysHome, dur(450), function(){
+          if(!alive()) return;
+          next();
+        });
+      });
+    }
+
+    function nextPlay(fn){
+      setBallCaption('Próxima jogada.', false);
+      simLater(fn, BETWEEN_PLAYS);
+    }
+
+    function play1(){
+      runInBehind(function(){
+        moveBall(midfield, 'Avança até à intermediária.', 650, fwdKey, SIM_PAUSE, function(){
+          simShootFrom(midfield, dur, function(){
+            afterGoal([fwdKey], function(){ nextPlay(play2); });
+          });
+        });
+      });
+    }
+
+    function play2(){
+      runInBehind(function(){
+        moveBall(byline, 'Leva a bola até ao fundo.', 600, fwdKey, 400, function(){
+          moveBall(cutIn, 'Corta para o lado oposto.', 650, fwdKey, 400, function(){
+            simShootFrom(cutIn, dur, function(){
+              afterGoal([fwdKey], function(){ nextPlay(play3); });
+            });
+          });
+        });
+      });
+    }
+
+    function play3(){
+      runInBehind(function(){
+        moveBall(byline, 'Leva a bola até ao fundo.', 600, fwdKey, 400, function(){
+          /* Cruzamento: o segundo avançado ataca a área ao mesmo tempo que a bola lá chega */
+          var from = {x:ballPos.x, y:ballPos.y};
+          simDraw(function(){ drawLine(from, strikeZone, 'good', true); });
+          setBallCaption('Cruzamento! O segundo avançado ataca a área.', false);
+          var done = join(2, function(){
+            removeSimShapes();
+            simLater(finalShot, pause(300, 650));
+          });
+          animateMarkersTo([{ key:otherFwdKey, to:strikeZone }], dur(650), done);
+          animateBallTo(strikeZone, dur(650), done);
+        });
+      });
+    }
+
+    function finalShot(){
+      simDraw(function(){ drawLine(strikeZone, goal, 'good', false); });
+      setBallCaption('Remate!', false);
+      animateBallTo(goal, dur(400), function(){
+        if(!alive()) return;
+        afterGoal([fwdKey, otherFwdKey], finishAll);
+      });
+    }
+
+    /* Fim: a defesa adversária volta ao sítio gravado e a sequência termina */
+    function finishAll(){
+      animateOpponentsHome(dur(700), function(){
+        if(!alive()) return;
+        simActive = false;
+        oppDisplaced = {};
+        setBallCaption('');
+      });
+    }
+
+    retreatDefence(play1);
   }
 
   /* Remate a partir de origin, com a mesma lógica de 0/1/2 adversários no caminho do modo Ataque.
      No fim marca simActive=false e chama onGoal (que deve chamar celebrateGoal). */
   function simShootFrom(origin, dur, onGoal){
     var goal = {x:200, y:34};
-    var inWay = boardState.opponents.filter(function(o){
+    /* posição visual (se uma simulação deslocou o adversário), senão a gravada */
+    var inWay = boardState.opponents.map(function(o){ return oppDisplaced[o.id] || o; }).filter(function(o){
       return o.y < origin.y - 10 && o.y > goal.y + 10 && Math.abs(o.x - lerpX(origin, goal, o.y)) < 90;
     }).sort(function(a,b){ return b.y - a.y; });
 
