@@ -30,6 +30,9 @@
     --marker-lo:#D4E4DA;
     --marker-ring:#0F4A2C;
     --marker-ink:#0C2A1E;
+    --gk-hi:#E7F0FF;
+    --gk-lo:#9FC0EC;
+    --gk-ring:#1D3E72;
     --opp-hi:#F28B7C;
     --opp-lo:#A93427;
     --opp-ring:#FFFFFF;
@@ -65,6 +68,9 @@
       --marker-lo:#BCD3C4;
       --marker-ring:#0A2318;
       --marker-ink:#0C2A1E;
+      --gk-hi:#D9E6FB;
+      --gk-lo:#7FA0D6;
+      --gk-ring:#152A4E;
       --opp-hi:#F4907F;
       --opp-lo:#A53428;
       --opp-ring:#F6ECEA;
@@ -100,6 +106,9 @@
     --marker-lo:#BCD3C4;
     --marker-ring:#0A2318;
     --marker-ink:#0C2A1E;
+    --gk-hi:#D9E6FB;
+    --gk-lo:#7FA0D6;
+    --gk-ring:#152A4E;
     --opp-hi:#F4907F;
     --opp-lo:#A53428;
     --opp-ring:#F6ECEA;
@@ -301,6 +310,8 @@
   .stop-amber{stop-color:var(--amber);}
   .stop-marker-hi{stop-color:var(--marker-hi);}
   .stop-marker-lo{stop-color:var(--marker-lo);}
+  .stop-gk-hi{stop-color:var(--gk-hi);}
+  .stop-gk-lo{stop-color:var(--gk-lo);}
   .stop-opp-hi{stop-color:var(--opp-hi);}
   .stop-opp-lo{stop-color:var(--opp-lo);}
   .pitch-surround{fill:url(#surroundGrad);}
@@ -379,6 +390,7 @@
     filter:drop-shadow(0 2px 1.6px rgba(0,0,0,.45));
   }
   .marker-label{font:700 11px 'Oswald',sans-serif;fill:var(--marker-ink);text-anchor:middle;}
+  .marker.gk .marker-circle{fill:url(#gkGrad); stroke:var(--gk-ring);}
   .pulse-ring{
     fill:none;
     stroke:var(--amber);
@@ -794,6 +806,11 @@
           <stop offset=".55" class="stop-marker-hi"/>
           <stop offset="1" class="stop-marker-lo"/>
         </radialGradient>
+        <radialGradient id="gkGrad" cx=".38" cy=".32" r=".75" fx=".34" fy=".26">
+          <stop offset="0" class="stop-gk-hi"/>
+          <stop offset=".55" class="stop-gk-hi"/>
+          <stop offset="1" class="stop-gk-lo"/>
+        </radialGradient>
         <radialGradient id="amberGrad" cx=".38" cy=".32" r=".75" fx=".34" fy=".26">
           <stop offset="0" stop-color="#FFD08A"/>
           <stop offset=".5" class="stop-amber"/>
@@ -894,7 +911,7 @@
 
       <g id="pathLayer"></g>
 
-      <g class="marker draggable" id="m-gr" data-kind="own" data-key="gr" transform="translate(200,565)">
+      <g class="marker draggable gk" id="m-gr" data-kind="own" data-key="gr" transform="translate(200,565)">
         <circle r="13" class="marker-circle"/>
         <text class="marker-label" dy="4">GR</text>
       </g>
@@ -1905,7 +1922,7 @@
     var wide = side({x:30, y:140});       /* receção larga, nas costas da defesa */
     var byline = side({x:25, y:40});      /* fundo */
     var cutIn = side({x:230, y:95});      /* corte para o lado oposto */
-    var midfield = side({x:150, y:305});  /* intermediária (a mesma da Jogada: Zagueiro) */
+    var midfield = side({x:200, y:120});  /* bem no meio da intermediária de ataque, não perto do meio-campo */
     var strikeZone = {x:200, y:55};       /* zona de remate do segundo avançado (central) */
     var goal = {x:200, y:34};
     var BETWEEN_PLAYS = 650;
@@ -2146,7 +2163,7 @@
   var DEFENSE_HOLD = 2500;
 
   function startDefenseSimulation(){
-    beginSimulation();
+    var runId = beginSimulation();
     var reduce = prefersReducedMotion();
     var fwdKey = currentSide === 'esquerda' ? 'ae' : 'ad';
     var otherKey = fwdKey === 'ae' ? 'ad' : 'ae';
@@ -2160,19 +2177,32 @@
     ];
     var keys = moves.map(function(m){ return m.key; });
     var ms = 800;
+    /* O adversário (se presente) ataca a avançar sobre a nossa baliza, enquanto a nossa linha recua */
+    var oppMoves = boardState.opponents.map(function(o){
+      return { id:o.id, to:{ x:o.x, y:Math.max(o.y, Math.min(o.y + 80, 580)) } };
+    });
 
-    setBallCaption('A equipa baixa a linha. O avançado mais próximo desce a ajudar a defender, o outro fica no meio, pronto para o contra-ataque.', false);
-    animateMarkersTo(moves, reduce ? 0 : ms, function(){
-      if(!simActive) return;
+    function join(n, next){
+      var left = n;
+      return function(){ if(--left === 0 && simActive && runId === simRunId) next(); };
+    }
+
+    setBallCaption('A equipa baixa a linha. O avançado mais próximo desce a ajudar a defender, o outro fica no meio, pronto para o contra-ataque. O adversário avança.', false);
+    var afterDrop = join(oppMoves.length ? 2 : 1, function(){
       simLater(function(){
-        animateMarkersHome(keys, reduce ? 0 : ms, function(){
-          if(!simActive) return;
+        var afterReturn = join(oppMoves.length ? 2 : 1, function(){
+          if(!simActive || runId !== simRunId) return;
           simActive = false;
           simDisplaced = {};
+          oppDisplaced = {};
           setBallCaption('');
         });
+        animateMarkersHome(keys, reduce ? 0 : ms, afterReturn);
+        if(oppMoves.length) animateOpponentsHome(reduce ? 0 : ms, afterReturn);
       }, reduce ? DEFENSE_HOLD + ms : DEFENSE_HOLD);
     });
+    animateMarkersTo(moves, reduce ? 0 : ms, afterDrop);
+    if(oppMoves.length) animateOpponentsTo(oppMoves, reduce ? 0 : ms, afterDrop);
   }
 
   simulatePlayBtn.addEventListener('click', startSimulation);
