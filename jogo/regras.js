@@ -107,7 +107,12 @@ export function alvoCamara(bola, tc, arthur) {
 }
 
 // Inclinação da cabeça para ver a bola no chão a esta distância (negativo = para baixo).
+// Com a bola colada aos pés ela nunca cabe no ecrã: aí olha em frente, para o lance.
+export const DIST_BOLA_NOS_PES = 0.6;
+export const PITCH_BOLA_NOS_PES = -0.2;
+
 export function pitchParaBola(dist, alturaOlhos, raioBola) {
+  if (dist < DIST_BOLA_NOS_PES) return PITCH_BOLA_NOS_PES;
   const p = -Math.atan2(alturaOlhos - raioBola, Math.max(dist, 0.5));
   return Math.max(-0.6, Math.min(0, p));
 }

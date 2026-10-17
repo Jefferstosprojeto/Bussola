@@ -120,6 +120,7 @@ test('alvoCamara antecipa a bola, depois usa o ponto final, depois mantem', () =
 test('pitchParaBola baixa a cabeca para a bola e fica entre -0,6 e 0', () => {
   const longe = pitchParaBola(20, 1.4, 0.11);
   assert.ok(longe < 0 && longe > -0.1, `longe ${longe}`);
-  assert.equal(pitchParaBola(0.2, 1.4, 0.11), -0.6);
+  assert.equal(pitchParaBola(0.7, 1.4, 0.11), -0.6);
+  assert.equal(pitchParaBola(0.2, 1.4, 0.11), -0.2, 'bola nos pes: olha em frente');
   assert.ok(pitchParaBola(3, 1.4, 0.11) < longe);
 });
