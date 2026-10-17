@@ -37,7 +37,11 @@ export function criarOlhar(elemento) {
   elemento.addEventListener('pointerdown', (ev) => {
     if (!s.ativo) return;
     arrasto = { x: ev.clientX, y: ev.clientY, id: ev.pointerId };
-    if (elemento.setPointerCapture) elemento.setPointerCapture(ev.pointerId);
+    try {
+      if (elemento.setPointerCapture) elemento.setPointerCapture(ev.pointerId);
+    } catch {
+      // Sem captura o arrasto continua a funcionar dentro do elemento.
+    }
   });
   elemento.addEventListener('pointermove', (ev) => {
     if (!s.ativo || !arrasto || ev.pointerId !== arrasto.id) return;
@@ -53,7 +57,7 @@ export function criarOlhar(elemento) {
   elemento.addEventListener('pointercancel', largar);
 
   window.addEventListener('keydown', (ev) => {
-    if (!ev.key.startsWith('Arrow')) return;
+    if (!ev.key?.startsWith('Arrow')) return;
     if (s.ativo) ev.preventDefault();
     teclas.add(ev.key);
   });

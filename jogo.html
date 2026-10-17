@@ -59,17 +59,18 @@
   .cenario .desc{margin:4px 0;color:var(--tinta-suave);font-size:14px;line-height:1.4}
   .cenario .melhor{margin:0;color:var(--ambar);letter-spacing:.12em}
   .cenario.fechado{opacity:.6}
+  .lista-cenarios .carregar{margin:4px 0;color:var(--tinta-suave);font-size:14px;line-height:1.4}
   .btn-primario,.btn-fantasma{display:inline-block;flex-shrink:0;text-align:center;text-decoration:none;cursor:pointer;border-radius:999px;padding:11px 20px;font:600 13px 'Oswald',sans-serif;text-transform:uppercase;letter-spacing:.04em}
   .btn-primario[hidden],.btn-fantasma[hidden]{display:none}
   .btn-primario{background:var(--verde-escuro);color:#fff;border:none}
   .btn-primario:disabled{background:var(--linha);color:var(--tinta-suave);cursor:not-allowed}
   .btn-fantasma{background:transparent;color:var(--tinta);border:1px solid var(--linha)}
   .opcoes{display:grid;gap:8px}
-  .opcao{display:flex;align-items:center;gap:12px;width:100%;min-height:48px;text-align:left;padding:12px 14px;border-radius:12px;border:1px solid var(--linha);background:var(--superficie);color:var(--tinta);font-size:16px;font-weight:600;cursor:pointer}
+  .opcao{touch-action:manipulation;display:flex;align-items:center;gap:12px;width:100%;min-height:48px;text-align:left;padding:12px 14px;border-radius:12px;border:1px solid var(--linha);background:var(--superficie);color:var(--tinta);font-size:16px;font-weight:600;cursor:pointer}
   .opcao:hover,.opcao:focus-visible{border-color:var(--verde)}
   .tecla{display:inline-grid;place-items:center;flex-shrink:0;width:26px;height:26px;border-radius:7px;background:var(--verde-escuro);color:#fff;font:600 13px 'Oswald',sans-serif}
   #miniMapa{width:100%;max-height:48vh;display:block;margin:0 0 12px;border-radius:10px}
-  #miniMapa .ponto{cursor:pointer}
+  #miniMapa .ponto{cursor:pointer;touch-action:manipulation}
   #hud{position:fixed;inset:0;pointer-events:none}
   #hud[hidden]{display:none}
   .hud-sair{pointer-events:auto;position:absolute;top:max(12px,env(safe-area-inset-top));left:max(12px,env(safe-area-inset-left));background:rgba(10,35,24,.72);color:#fff;border:none;border-radius:999px;padding:8px 16px;font:600 13px 'Oswald',sans-serif;text-transform:uppercase;cursor:pointer}
@@ -119,7 +120,9 @@
     <h1>Jogo do Avançado</h1>
     <p class="sub">Vê o lance pelos teus olhos. Olha à volta antes de receber.</p>
     <p class="aviso-deitar" id="avisoDeitar" hidden>Dica: deita o telemóvel para veres melhor.</p>
-    <ul class="lista-cenarios" id="listaCenarios"></ul>
+    <ul class="lista-cenarios" id="listaCenarios">
+      <li class="carregar">A carregar o jogo...</li>
+    </ul>
   </div>
 </section>
 
@@ -175,6 +178,31 @@
   </div>
 </section>
 
-<script type="module" src="jogo/fluxo.js"></script>
+<section class="ecra ecra-cheio" id="ecra-falha" hidden>
+  <div class="cartao">
+    <h2>Não foi possível carregar o jogo.</h2>
+    <p class="sub">Verifica a ligação à internet e tenta outra vez.</p>
+    <div class="botoes">
+      <button type="button" class="btn-primario" id="btnTentarOutraVez">Tentar outra vez</button>
+      <a class="btn-fantasma" href="index.html">Voltar ao Bússola</a>
+    </div>
+  </div>
+</section>
+
+<script>
+  // Se o jogo não arrancar (sem internet, CDN em baixo, browser antigo), mostra a falha em vez de um menu vazio.
+  window.mostrarFalha = function () {
+    if (window.__jogoArrancou) return;
+    var ecras = document.querySelectorAll('.ecra');
+    for (var i = 0; i < ecras.length; i++) ecras[i].hidden = true;
+    document.getElementById('hud').hidden = true;
+    document.getElementById('ecra-falha').hidden = false;
+  };
+  document.getElementById('btnTentarOutraVez').addEventListener('click', function () { location.reload(); });
+  setTimeout(function () { if (!window.__jogoArrancou) window.mostrarFalha(); }, 8000);
+</script>
+<script type="module">
+  import('./jogo/fluxo.js').catch(() => window.mostrarFalha());
+</script>
 </body>
 </html>

@@ -95,13 +95,18 @@ function iniciar(cenario) {
   };
   jogada = atual;
   teclasAtivas = null;
+  let scansMostrados = 0;
   $('numScans').textContent = '0';
   mostrar(null);
   mostrarDica();
   motor.jogar(cenario, varianteId, {
     aoOlhar: (t, yaw) => {
       atual.contador.registar(t, yaw);
-      $('numScans').textContent = String(atual.contador.total());
+      const total = atual.contador.total();
+      if (total !== scansMostrados) {
+        scansMostrados = total;
+        $('numScans').textContent = String(total);
+      }
     },
     aoCongelar: () => {
       if (jogada === atual) mostrarPergunta();
@@ -111,8 +116,10 @@ function iniciar(cenario) {
 
 function preencherOpcoes(caixa, textos, aoEscolher) {
   let feito = false;
+  // Um toque duplo não pode responder também ao ecrã seguinte.
+  const pronto = performance.now() + 350;
   const escolher = (i) => {
-    if (feito) return;
+    if (feito || performance.now() < pronto) return;
     feito = true;
     teclasAtivas = null;
     aoEscolher(i);
@@ -155,8 +162,6 @@ function desenharMiniMapa(mapa, tu, pontos, aoTocar) {
   pontos.forEach(([x, z], i) => {
     const g = svg('g', { class: 'ponto' }, mapa);
     svg('circle', { cx: x, cy: z, r: 1.8, fill: '#FFFFFF', stroke: '#0C2A1E', 'stroke-width': 0.3 }, g);
-    const t = svg('text', { x, y: z + 0.75, 'text-anchor': 'middle', 'font-size': 2.2, 'font-weight': 700, fill: '#0C2A1E' }, g);
-    t.textContent = String(i + 1);
     g.addEventListener('click', () => aoTocar(i));
   });
   // Rótulo "Tu" numa pílula escura: por cima do ponto, ou por baixo se tapar alguma opção.
@@ -189,9 +194,15 @@ function desenharMiniMapa(mapa, tu, pontos, aoTocar) {
   }, rotulo);
   const texto = svg('text', { x: tu[0], y: cyRotulo + 0.7, 'text-anchor': 'middle', 'font-size': 2, 'font-weight': 700, fill: '#FFFFFF' }, rotulo);
   texto.textContent = 'Tu';
-  // O "Tu" desenha-se por último, por cima das opções: anel âmbar com ponto ao centro.
+  // O "Tu" fica por cima dos círculos das opções: anel âmbar com ponto ao centro.
   svg('circle', { cx: tu[0], cy: tu[1], r: RAIO_TU, fill: 'none', stroke: '#E2932E', 'stroke-width': 0.45 }, rotulo);
   svg('circle', { cx: tu[0], cy: tu[1], r: 0.3, fill: '#E2932E' }, rotulo);
+  // Os números das opções desenham-se por último, por cima de tudo; o toque passa para o círculo.
+  const numeros = svg('g', { 'pointer-events': 'none' }, mapa);
+  pontos.forEach(([x, z], i) => {
+    const t = svg('text', { x, y: z + 0.75, 'text-anchor': 'middle', 'font-size': 2.2, 'font-weight': 700, fill: '#0C2A1E' }, numeros);
+    t.textContent = String(i + 1);
+  });
 }
 
 function mostrarPergunta() {
@@ -292,6 +303,8 @@ function ligarBotoes() {
 }
 
 function arrancar() {
+  window.__jogoArrancou = true;
+  $('ecra-falha').hidden = true;
   try {
     motor = criarMotor($('cena'));
   } catch {
