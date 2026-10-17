@@ -1,6 +1,7 @@
 // Fluxo do jogo: menu, lance, pergunta de atenção, decisão, consequência e resultado.
 import { CAMPO, CENARIOS } from './cenarios.js';
 import { criarMotor } from './motor.js';
+import { criarRepeticao } from './repeticao.js';
 import {
   calcularEstrelas, criarArmazem, criarContadorScans, estaDesbloqueado,
   posicaoEm, sortearVariante, trajetoriasDaVariante, JANELA_SCAN,
@@ -24,6 +25,7 @@ let motor = null;
 let jogada = null;
 let teclasAtivas = null;
 let temporizadorDica = 0;
+let repeticao = null;
 
 function mostrar(nome) {
   for (const e of ECRAS) $('ecra-' + e).hidden = e !== nome;
@@ -264,6 +266,20 @@ function ligarBotoes() {
   $('btnMenu').addEventListener('click', () => {
     motor.parar();
     desenharMenu();
+  });
+  $('btnRepeticao').addEventListener('click', () => {
+    const { cenario, variante, frames } = jogada;
+    $('legendaRepeticao').textContent = variante.destaque.legenda;
+    mostrar('repeticao');
+    repeticao = criarRepeticao($('telaRepeticao'), {
+      frames, jogadores: cenario.jogadores, destaque: variante.destaque, congelaEm: cenario.congelaEm, campo: CAMPO,
+    });
+    repeticao.tocar();
+  });
+  $('btnFecharRepeticao').addEventListener('click', () => {
+    if (repeticao) repeticao.parar();
+    repeticao = null;
+    mostrar('resultado');
   });
   document.addEventListener('keydown', (ev) => {
     if (ev.repeat || !teclasAtivas) return;
