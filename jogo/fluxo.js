@@ -150,7 +150,6 @@ function desenharMiniMapa(mapa, tu, pontos, aoTocar) {
   svg('circle', { cx: C / 2, cy: L / 2, r: 6, ...linha }, mapa);
   svg('rect', { x: 0, y: (L - 20) / 2, width: 9, height: 20, ...linha }, mapa);
   svg('rect', { x: C - 9, y: (L - 20) / 2, width: 9, height: 20, ...linha }, mapa);
-  svg('circle', { cx: tu[0], cy: tu[1], r: 0.7, fill: '#E2932E', stroke: '#0C2A1E', 'stroke-width': 0.2, 'pointer-events': 'none' }, mapa);
   pontos.forEach(([x, z], i) => {
     const g = svg('g', { class: 'ponto' }, mapa);
     svg('circle', { cx: x, cy: z, r: 1.8, fill: '#FFFFFF', stroke: '#0C2A1E', 'stroke-width': 0.3 }, g);
@@ -174,13 +173,23 @@ function desenharMiniMapa(mapa, tu, pontos, aoTocar) {
     if (cyRotulo !== null) break;
   }
   if (cyRotulo === null) cyRotulo = Math.max(PILULA_A / 2, tu[1] - 2.4);
+  const RAIO_TU = 0.9;
   const rotulo = svg('g', { 'pointer-events': 'none' }, mapa);
+  // Linha de chamada da borda da pílula até ao anel do "Tu".
+  const lado = cyRotulo < tu[1] ? 1 : -1;
+  svg('line', {
+    x1: tu[0], y1: cyRotulo + lado * (PILULA_A / 2), x2: tu[0], y2: tu[1] - lado * RAIO_TU,
+    stroke: '#E2932E', 'stroke-width': 0.2,
+  }, rotulo);
   svg('rect', {
     x: tu[0] - PILULA_L / 2, y: cyRotulo - PILULA_A / 2, width: PILULA_L, height: PILULA_A,
     rx: PILULA_A / 2, fill: '#0C2A1E', 'fill-opacity': 0.85,
   }, rotulo);
   const texto = svg('text', { x: tu[0], y: cyRotulo + 0.7, 'text-anchor': 'middle', 'font-size': 2, 'font-weight': 700, fill: '#FFFFFF' }, rotulo);
   texto.textContent = 'Tu';
+  // O "Tu" desenha-se por último, por cima das opções: anel âmbar com ponto ao centro.
+  svg('circle', { cx: tu[0], cy: tu[1], r: RAIO_TU, fill: 'none', stroke: '#E2932E', 'stroke-width': 0.45 }, rotulo);
+  svg('circle', { cx: tu[0], cy: tu[1], r: 0.3, fill: '#E2932E' }, rotulo);
 }
 
 function mostrarPergunta() {
