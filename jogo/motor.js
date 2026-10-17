@@ -14,6 +14,7 @@ const ESCALA_MIN = 0.08;
 const PASSO_GRAVACAO = 0.1;
 const BALANCO = 0.04;
 const DT_MAX = 0.05;
+const DIST_MIN_ARTHUR = 0.9;
 
 const CORES = {
   nos: { camisola: ['#1B5C3E', '#FFFFFF'], calcoes: '#FFFFFF' },
@@ -146,6 +147,20 @@ export function criarMotor(canvas) {
     }
   }
 
+  // Na consequência, ninguém fica em cima da câmara: empurra para fora até DIST_MIN_ARTHUR.
+  function afastarDeArthur(p) {
+    const a = estado.arthur;
+    const dx = p[0] - a[0];
+    const dz = p[1] - a[1];
+    const d = Math.hypot(dx, dz);
+    if (d >= DIST_MIN_ARTHUR) return p;
+    if (d < 1e-6) {
+      const y = estado.yawCam;
+      return [a[0] - Math.cos(y) * DIST_MIN_ARTHUR, a[1] + Math.sin(y) * DIST_MIN_ARTHUR];
+    }
+    return [a[0] + (dx / d) * DIST_MIN_ARTHUR, a[1] + (dz / d) * DIST_MIN_ARTHUR];
+  }
+
   function passoConsequencia(dt) {
     const e = estado;
     const k = e.cons;
@@ -156,7 +171,7 @@ export function criarMotor(canvas) {
     e.reacao.atualizar(dt, { arthur: e.arthur, bola: pBola });
     for (const id of bonecos.keys()) {
       const p = k.nos[id] ? posicaoEm(k.nos[id], e.tc) : e.reacao.posicao(id) || e.congelado[id];
-      colocarJogador(id, p, dt);
+      colocarJogador(id, afastarDeArthur(p), dt);
     }
     if (Math.hypot(pBola[0] - e.arthur[0], pBola[1] - e.arthur[1]) > 1.5) {
       const alvo = yawParaPonto(e.arthur, pBola);

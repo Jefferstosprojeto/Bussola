@@ -150,6 +150,7 @@ function desenharMiniMapa(mapa, tu, pontos, aoTocar) {
   svg('circle', { cx: C / 2, cy: L / 2, r: 6, ...linha }, mapa);
   svg('rect', { x: 0, y: (L - 20) / 2, width: 9, height: 20, ...linha }, mapa);
   svg('rect', { x: C - 9, y: (L - 20) / 2, width: 9, height: 20, ...linha }, mapa);
+  svg('circle', { cx: tu[0], cy: tu[1], r: 0.7, fill: '#E2932E', stroke: '#0C2A1E', 'stroke-width': 0.2, 'pointer-events': 'none' }, mapa);
   pontos.forEach(([x, z], i) => {
     const g = svg('g', { class: 'ponto' }, mapa);
     svg('circle', { cx: x, cy: z, r: 1.8, fill: '#FFFFFF', stroke: '#0C2A1E', 'stroke-width': 0.3 }, g);
@@ -157,9 +158,29 @@ function desenharMiniMapa(mapa, tu, pontos, aoTocar) {
     t.textContent = String(i + 1);
     g.addEventListener('click', () => aoTocar(i));
   });
-  svg('circle', { cx: tu[0], cy: tu[1], r: 1, fill: '#E2932E', stroke: '#0C2A1E', 'stroke-width': 0.25, 'pointer-events': 'none' }, mapa);
-  const rotulo = svg('text', { x: tu[0], y: tu[1] - 2.4, 'text-anchor': 'middle', 'font-size': 2, 'font-weight': 700, fill: '#FFFFFF', 'pointer-events': 'none' }, mapa);
-  rotulo.textContent = 'Tu';
+  // Rótulo "Tu" numa pílula escura: por cima do ponto, ou por baixo se tapar alguma opção.
+  const PILULA_L = 4;
+  const PILULA_A = 2.6;
+  const RAIO_PONTO = 1.8;
+  const tapa = (cy) => pontos.some(([x, z]) => {
+    const nx = Math.max(tu[0] - PILULA_L / 2, Math.min(x, tu[0] + PILULA_L / 2));
+    const ny = Math.max(cy - PILULA_A / 2, Math.min(z, cy + PILULA_A / 2));
+    return Math.hypot(x - nx, z - ny) < RAIO_PONTO + 0.1;
+  });
+  const cabe = (cy) => cy - PILULA_A / 2 >= 0 && cy + PILULA_A / 2 <= L;
+  let cyRotulo = null;
+  for (const d of [2.4, 3.2, 4, 4.8, 5.6, 6.4]) {
+    cyRotulo = [tu[1] - d, tu[1] + d].find((cy) => cabe(cy) && !tapa(cy)) ?? null;
+    if (cyRotulo !== null) break;
+  }
+  if (cyRotulo === null) cyRotulo = Math.max(PILULA_A / 2, tu[1] - 2.4);
+  const rotulo = svg('g', { 'pointer-events': 'none' }, mapa);
+  svg('rect', {
+    x: tu[0] - PILULA_L / 2, y: cyRotulo - PILULA_A / 2, width: PILULA_L, height: PILULA_A,
+    rx: PILULA_A / 2, fill: '#0C2A1E', 'fill-opacity': 0.85,
+  }, rotulo);
+  const texto = svg('text', { x: tu[0], y: cyRotulo + 0.7, 'text-anchor': 'middle', 'font-size': 2, 'font-weight': 700, fill: '#FFFFFF' }, rotulo);
+  texto.textContent = 'Tu';
 }
 
 function mostrarPergunta() {
