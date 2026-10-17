@@ -97,11 +97,28 @@ for (const c of CENARIOS) {
           verificarConsequencia(pontos, `${o}.${id}`, noCongelamento[id]);
         }
         verificarConsequencia(k.bola, `${o}.bola`, bolaNoCongelamento);
+        const arthurFim = posicaoEm(k.nos.arthur, k.duracao);
         for (const [id, comp] of Object.entries(k.adversarios || {})) {
           assert.equal(c.jogadores[id]?.equipa, 'eles', `${o}: ${id} nao e adversario`);
           assert.ok(['perseguir', 'fechar', 'pressionar'].includes(comp.tipo), `${o}: tipo ${comp.tipo}`);
           if (comp.tipo === 'perseguir') assert.equal(comp.alvo, 'arthur');
-          if (comp.tipo === 'fechar') dentroDoCampo([[0, ...comp.ponto]], `${o}.${id}.ponto`);
+          if (comp.tipo === 'fechar') {
+            dentroDoCampo([[0, ...comp.ponto]], `${o}.${id}.ponto`);
+            assert.ok(dist(comp.ponto, arthurFim) >= 1.3, `${o}.${id}: ponto de fechar a ${dist(comp.ponto, arthurFim).toFixed(2)} m do arthur`);
+          }
+        }
+
+        // A bola não atravessa adversários parados (os que não reagem ficam onde congelaram).
+        const bolaFim = posicaoEm(k.bola, k.duracao);
+        const tFim = k.bola[k.bola.length - 1][0];
+        for (const id of eles) {
+          if ((k.adversarios || {})[id]) continue;
+          for (let t = 0; t <= tFim + 1e-9; t += 0.05) {
+            const b = posicaoEm(k.bola, t);
+            if (dist(b, bolaFim) < 1) continue;
+            const dd = dist(b, noCongelamento[id]);
+            assert.ok(dd >= 1, `${o}: a bola passa a ${dd.toFixed(2)} m de ${id} (t=${t.toFixed(2)})`);
+          }
         }
       }
     }

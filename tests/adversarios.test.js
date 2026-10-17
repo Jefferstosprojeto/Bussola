@@ -38,10 +38,18 @@ test('perseguir aproxima-se do arthur em movimento', () => {
   assert.ok(dist(r.posicao('a'), arthur) < 3, `distancia final ${dist(r.posicao('a'), arthur)}`);
 });
 
-test('pressionar vai para a bola', () => {
+test('pressionar vai para a bola quando ela esta perto do arthur', () => {
   const r = criarReacao({ a: { tipo: 'pressionar' } }, { a: [0, 0] });
-  for (let i = 0; i < 120; i++) r.atualizar(DT, { arthur: [0, 0], bola: [4, 3] });
-  assert.ok(dist(r.posicao('a'), [4, 3]) < 1.2);
+  for (let i = 0; i < 120; i++) r.atualizar(DT, { arthur: [4, 4], bola: [4, 3] });
+  assert.ok(dist(r.posicao('a'), [4, 3]) < 1.2, `ficou em ${r.posicao('a')}`);
+});
+
+test('pressionar vai ao arthur enquanto a bola esta longe dele', () => {
+  const r = criarReacao({ a: { tipo: 'pressionar' } }, { a: [0, 0] });
+  for (let i = 0; i < 120; i++) r.atualizar(DT, { arthur: [6, 0], bola: [0, 8] });
+  const p = r.posicao('a');
+  assert.ok(dist(p, [6, 0]) < 1.2, `ficou em ${p}`);
+  assert.ok(dist(p, [0, 8]) > 5, 'nao devia ir para a bola');
 });
 
 test('sem comportamentos nao rebenta', () => {
