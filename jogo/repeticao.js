@@ -29,7 +29,11 @@ export function criarRepeticao(tela, { frames, jogadores, destaque, congelaEm, c
 
   function dimensionar() {
     const r = Math.min(window.devicePixelRatio || 1, 2);
-    const w = tela.clientWidth || 300;
+    tela.style.width = '';
+    tela.style.height = '';
+    const w = Math.min(tela.clientWidth || 300, (window.innerHeight * 0.5) * C / L);
+    tela.style.width = w + 'px';
+    tela.style.height = (w * L / C) + 'px';
     tela.width = Math.round(w * r);
     tela.height = Math.round(((w * L) / C) * r);
     escala = tela.width / C;
@@ -76,8 +80,9 @@ export function criarRepeticao(tela, { frames, jogadores, destaque, congelaEm, c
     if (!q) return;
     desenharCampo();
     if (t >= congelaEm - MOSTRAR_DESTAQUE_ANTES) {
-      const cor = destaque.tipo === 'pressao' ? 'rgba(194,73,59,.45)' : 'rgba(127,211,154,.55)';
-      circulo(destaque.centro[0], destaque.centro[1], destaque.raio, cor, '#FFFFFF', 0.15);
+      const pressao = destaque.tipo === 'pressao';
+      const cor = pressao ? 'rgba(230,57,40,.62)' : 'rgba(127,211,154,.55)';
+      circulo(destaque.centro[0], destaque.centro[1], destaque.raio, cor, pressao ? '#FFD3CC' : '#FFFFFF', 0.15);
     }
     for (const [id, p] of Object.entries(q.pos)) {
       if (id === 'arthur') continue;
@@ -102,11 +107,14 @@ export function criarRepeticao(tela, { frames, jogadores, destaque, congelaEm, c
   return {
     tocar() {
       dimensionar();
+      window.removeEventListener('resize', dimensionar);
+      window.addEventListener('resize', dimensionar);
       cancelAnimationFrame(raf);
       inicio = performance.now();
       raf = requestAnimationFrame(ciclo);
     },
     parar() {
+      window.removeEventListener('resize', dimensionar);
       cancelAnimationFrame(raf);
       raf = 0;
     },
