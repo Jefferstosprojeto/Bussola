@@ -4,7 +4,7 @@ import { CAMPO } from './cenarios.js';
 import { construirCampo } from './campo.js';
 import { criarBoneco } from './boneco.js';
 import { criarOlhar } from './olhar.js';
-import { posicaoEm, trajetoriasDaVariante, yawParaPonto } from './regras.js';
+import { alvoCamara, pitchParaBola, posicaoEm, trajetoriasDaVariante, yawParaPonto } from './regras.js';
 import { criarReacao } from './adversarios.js';
 
 const ALTURA_OLHOS = 1.4;
@@ -14,7 +14,7 @@ const ESCALA_MIN = 0.08;
 const PASSO_GRAVACAO = 0.1;
 const BALANCO = 0.04;
 const DT_MAX = 0.05;
-const DIST_MIN_ARTHUR = 0.9;
+const DIST_MIN_ARTHUR = 1.3;
 
 const CORES = {
   nos: { camisola: ['#1B5C3E', '#FFFFFF'], calcoes: '#FFFFFF' },
@@ -173,11 +173,13 @@ export function criarMotor(canvas) {
       const p = k.nos[id] ? posicaoEm(k.nos[id], e.tc) : e.reacao.posicao(id) || e.congelado[id];
       colocarJogador(id, afastarDeArthur(p), dt);
     }
-    if (Math.hypot(pBola[0] - e.arthur[0], pBola[1] - e.arthur[1]) > 1.5) {
-      const alvo = yawParaPonto(e.arthur, pBola);
-      e.yawCam += normalizar(alvo - e.yawCam) * Math.min(1, dt * 4);
-    }
-    e.pitch += (-0.08 - e.pitch) * Math.min(1, dt * 4);
+    // A câmara segue o lance: roda para onde a bola vai e baixa a cabeça para a ver no chão.
+    const alvo = alvoCamara(k.bola, e.tc, e.arthur);
+    if (alvo) e.alvoYaw = yawParaPonto(e.arthur, alvo);
+    const suave = Math.min(1, dt * 4);
+    e.yawCam += normalizar(e.alvoYaw - e.yawCam) * suave;
+    const distBola = Math.hypot(pBola[0] - e.arthur[0], pBola[1] - e.arthur[1]);
+    e.pitch += (pitchParaBola(distBola, ALTURA_OLHOS, RAIO_BOLA) - e.pitch) * suave;
     gravar(e.cenario.congelaEm + e.tc, 'consequencia');
     if (e.tc >= k.duracao) {
       e.fase = 'fim';
@@ -227,7 +229,7 @@ export function criarMotor(canvas) {
         t: 0, tc: 0, base, yawCam: base, pitch: 0,
         arthur: posicaoEm(traj.arthur, 0), velArthur: 0, passo: 0,
         bola: posicaoEm(cenario.bola, 0), frames: [], proximaGravacao: 0,
-        cons: null, reacao: null, congelado: null,
+        cons: null, reacao: null, congelado: null, alvoYaw: base,
       };
       relogio.getDelta();
     },
@@ -240,6 +242,7 @@ export function criarMotor(canvas) {
       e.reacao = criarReacao(e.cons.adversarios || {}, e.congelado);
       e.callbacks = callbacks;
       e.tc = 0;
+      e.alvoYaw = e.yawCam;
       e.fase = 'consequencia';
       relogio.getDelta();
     },

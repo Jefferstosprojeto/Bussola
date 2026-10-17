@@ -90,3 +90,24 @@ export function estaDesbloqueado(cenario, armazem) {
 export function yawParaPonto(de, para) {
   return Math.atan2(de[1] - para[1], para[0] - de[0]);
 }
+
+// Câmara na consequência: olha para onde a bola vai estar daqui a meio segundo; se isso for
+// em cima do Arthur, para o ponto onde a bola acaba; se também for, mantém (null).
+export const ANTECIPACAO_CAMARA = 0.5;
+export const DIST_ALVO_CAMARA = 1.5;
+export const DIST_ALVO_FINAL = 1.2;
+
+export function alvoCamara(bola, tc, arthur) {
+  const futuro = posicaoEm(bola, tc + ANTECIPACAO_CAMARA);
+  if (Math.hypot(futuro[0] - arthur[0], futuro[1] - arthur[1]) > DIST_ALVO_CAMARA) return futuro;
+  const u = bola[bola.length - 1];
+  const fim = [u[1], u[2]];
+  if (Math.hypot(fim[0] - arthur[0], fim[1] - arthur[1]) > DIST_ALVO_FINAL) return fim;
+  return null;
+}
+
+// Inclinação da cabeça para ver a bola no chão a esta distância (negativo = para baixo).
+export function pitchParaBola(dist, alturaOlhos, raioBola) {
+  const p = -Math.atan2(alturaOlhos - raioBola, Math.max(dist, 0.5));
+  return Math.max(-0.6, Math.min(0, p));
+}

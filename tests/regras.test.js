@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   posicaoEm, trajetoriasDaVariante, sortearVariante, criarContadorScans,
-  calcularEstrelas, criarArmazem, estaDesbloqueado, yawParaPonto,
+  calcularEstrelas, criarArmazem, estaDesbloqueado, yawParaPonto, alvoCamara, pitchParaBola,
   LIMIAR_SCAN, CHAVE_RECORDES,
 } from '../jogo/regras.js';
 
@@ -108,4 +108,18 @@ test('yawParaPonto segue a convencao do jogo', () => {
   assert.equal(yawParaPonto([0, 0], [5, 0]), 0);
   assert.ok(Math.abs(yawParaPonto([0, 0], [0, -5]) - Math.PI / 2) < 1e-9, 'esquerda = z menor = positivo');
   assert.ok(Math.abs(Math.abs(yawParaPonto([0, 0], [-5, 0])) - Math.PI) < 1e-9);
+});
+
+test('alvoCamara antecipa a bola, depois usa o ponto final, depois mantem', () => {
+  const bola = [[0, 0, 0], [1, 10, 0], [2, 13, 0]];
+  assert.deepEqual(alvoCamara(bola, 0, [10, 0]), [5, 0], 'bola daqui a meio segundo');
+  assert.deepEqual(alvoCamara(bola, 0.9, [10, 0]), [13, 0], 'perto do arthur: ponto final');
+  assert.equal(alvoCamara(bola, 1.9, [12.5, 0]), null, 'tudo em cima do arthur: mantem');
+});
+
+test('pitchParaBola baixa a cabeca para a bola e fica entre -0,6 e 0', () => {
+  const longe = pitchParaBola(20, 1.4, 0.11);
+  assert.ok(longe < 0 && longe > -0.1, `longe ${longe}`);
+  assert.equal(pitchParaBola(0.2, 1.4, 0.11), -0.6);
+  assert.ok(pitchParaBola(3, 1.4, 0.11) < longe);
 });
