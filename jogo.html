@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Jogo do Avançado</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Work+Sans:wght@400;500;600&display=swap">
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js",
+    "yuka": "https://cdn.jsdelivr.net/npm/yuka@0.7.8/build/yuka.module.js"
+  }
+}
+</script>
+<style>
+  :root{
+    --fundo:#F3FAF5; --superficie:#FFFFFF; --tinta:#0C2A1E; --tinta-suave:#54695D;
+    --verde:#1B5C3E; --verde-escuro:#123D29; --ambar:#E2932E; --linha:#CFE1D5;
+    --bom:#2C8C5B; --perigo:#C2493B; --vidro:rgba(255,255,255,.94);
+    --sombra:0 1px 2px rgba(10,35,24,.06), 0 10px 24px rgba(10,35,24,.12);
+    color-scheme:light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --fundo:#0A1B13; --superficie:#11251B; --tinta:#E7F3EB; --tinta-suave:#93AC9E;
+      --verde:#3AA06B; --verde-escuro:#1E6146; --ambar:#EFA23D; --linha:#22402E;
+      --bom:#4FBE85; --perigo:#E1685A; --vidro:rgba(17,37,27,.95);
+      color-scheme:dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --fundo:#0A1B13; --superficie:#11251B; --tinta:#E7F3EB; --tinta-suave:#93AC9E;
+    --verde:#3AA06B; --verde-escuro:#1E6146; --ambar:#EFA23D; --linha:#22402E;
+    --bom:#4FBE85; --perigo:#E1685A; --vidro:rgba(17,37,27,.95);
+    color-scheme:dark;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;overflow:hidden;background:var(--fundo);color:var(--tinta);font-family:'Work Sans',system-ui,-apple-system,sans-serif}
+  h1,h2,h3{font-family:'Oswald','Arial Narrow',sans-serif;margin:0}
+  button{font-family:inherit}
+  #cena{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;background:#9FD3F5}
+  .ecra{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;overflow-y:auto;
+    padding:max(16px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(16px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left))}
+  .ecra[hidden]{display:none}
+  .ecra-cheio{background:var(--fundo)}
+  .ecra-painel{background:rgba(6,20,13,.35)}
+  .cartao{width:100%;max-width:520px;margin:auto;background:var(--vidro);border:1px solid var(--linha);border-radius:18px;padding:20px;box-shadow:var(--sombra)}
+  .cartao-largo{max-width:760px}
+  .voltar{color:var(--verde);font-weight:600;text-decoration:none;font-size:14px}
+  .eyebrow,.kicker{font:600 12px 'Oswald',sans-serif;text-transform:uppercase;letter-spacing:.08em;color:var(--ambar);margin:12px 0 4px}
+  h1{font-size:30px;text-transform:uppercase}
+  h2{font-size:22px;line-height:1.2;margin-bottom:12px}
+  .sub{color:var(--tinta-suave);margin:6px 0 16px;line-height:1.45}
+  .aviso-deitar{background:color-mix(in srgb,var(--ambar) 18%,transparent);border-radius:10px;padding:8px 12px;font-size:14px;margin:0 0 12px}
+  .lista-cenarios{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+  .cenario{display:flex;gap:12px;align-items:center;justify-content:space-between;border:1px solid var(--linha);border-radius:14px;padding:12px 14px;background:var(--superficie)}
+  .cenario h3{font-size:17px;text-transform:uppercase}
+  .cenario .desc{margin:4px 0;color:var(--tinta-suave);font-size:14px;line-height:1.4}
+  .cenario .melhor{margin:0;color:var(--ambar);letter-spacing:.12em}
+  .cenario.fechado{opacity:.6}
+  .btn-primario,.btn-fantasma{display:inline-block;flex-shrink:0;text-align:center;text-decoration:none;cursor:pointer;border-radius:999px;padding:11px 20px;font:600 13px 'Oswald',sans-serif;text-transform:uppercase;letter-spacing:.04em}
+  .btn-primario[hidden],.btn-fantasma[hidden]{display:none}
+  .btn-primario{background:var(--verde-escuro);color:#fff;border:none}
+  .btn-primario:disabled{background:var(--linha);color:var(--tinta-suave);cursor:not-allowed}
+  .btn-fantasma{background:transparent;color:var(--tinta);border:1px solid var(--linha)}
+  .opcoes{display:grid;gap:8px}
+  .opcao{display:flex;align-items:center;gap:12px;width:100%;min-height:48px;text-align:left;padding:12px 14px;border-radius:12px;border:1px solid var(--linha);background:var(--superficie);color:var(--tinta);font-size:16px;font-weight:600;cursor:pointer}
+  .opcao:hover,.opcao:focus-visible{border-color:var(--verde)}
+  .tecla{display:inline-grid;place-items:center;flex-shrink:0;width:26px;height:26px;border-radius:7px;background:var(--verde-escuro);color:#fff;font:600 13px 'Oswald',sans-serif}
+  #miniMapa{width:100%;max-height:48vh;display:block;margin:0 0 12px;border-radius:10px}
+  #miniMapa .ponto{cursor:pointer}
+  #hud{position:fixed;inset:0;pointer-events:none}
+  #hud[hidden]{display:none}
+  .hud-sair{pointer-events:auto;position:absolute;top:max(12px,env(safe-area-inset-top));left:max(12px,env(safe-area-inset-left));background:rgba(10,35,24,.72);color:#fff;border:none;border-radius:999px;padding:8px 16px;font:600 13px 'Oswald',sans-serif;text-transform:uppercase;cursor:pointer}
+  .hud-scans{position:absolute;top:max(12px,env(safe-area-inset-top));right:max(12px,env(safe-area-inset-right));display:flex;align-items:center;gap:6px;background:rgba(10,35,24,.72);color:#fff;border-radius:999px;padding:6px 14px;font:700 18px 'Oswald',sans-serif}
+  .hud-scans svg{width:22px;height:22px}
+  .hud-dica{position:absolute;left:50%;bottom:max(20px,env(safe-area-inset-bottom));transform:translateX(-50%);margin:0;max-width:calc(100% - 32px);background:rgba(10,35,24,.72);color:#fff;padding:8px 16px;border-radius:999px;font-size:14px;text-align:center;transition:opacity .6s}
+  .hud-dica.some{opacity:0}
+  .estrelas{list-style:none;padding:0;margin:8px 0;display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .estrelas li{text-align:center;border:1px solid var(--linha);border-radius:12px;padding:10px 6px;font-size:13px;color:var(--tinta-suave);background:var(--superficie)}
+  .estrelas .icone{display:block;font-size:28px;line-height:1;color:var(--linha)}
+  .estrelas .ganha .icone{color:var(--ambar)}
+  .recorde{color:var(--bom);font-weight:700;margin:0 0 6px}
+  .resultado-bom{color:var(--bom)}
+  .resultado-mau{color:var(--perigo)}
+  .scans-linha{font-size:14px;color:var(--tinta-suave)}
+  .treinador{border-left:4px solid var(--ambar);padding:4px 0 4px 12px;margin:12px 0}
+  .treinador .kicker{margin-top:0}
+  .treinador p:last-child{margin:0;line-height:1.45}
+  .botoes{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+  #telaRepeticao{width:100%;display:block;border-radius:10px;background:#3E8E4A}
+  .legenda{font-size:14px;color:var(--tinta-suave)}
+  @media (max-height:500px) and (orientation:landscape){
+    .cartao{padding:14px}
+    .ecra-painel{align-items:flex-start}
+    h2{font-size:18px}
+    .cartao-duas{display:grid;grid-template-columns:1.2fr 1fr;gap:14px;max-width:760px;align-items:start}
+    .cartao-duas .kicker,.cartao-duas h2{grid-column:1 / -1}
+  }
+</style>
+</head>
+<body>
+<canvas id="cena" aria-label="Campo de futebol em 3D"></canvas>
+
+<div id="hud" hidden>
+  <button type="button" class="hud-sair" id="btnSair">Sair</button>
+  <div class="hud-scans" role="status" aria-label="Vezes que olhaste à volta">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 5C6.5 5 2.4 9.2 1 12c1.4 2.8 5.5 7 11 7s9.6-4.2 11-7c-1.4-2.8-5.5-7-11-7zm0 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8z"/></svg>
+    <span id="numScans">0</span>
+  </div>
+  <p class="hud-dica" id="dica"></p>
+</div>
+
+<section class="ecra ecra-cheio" id="ecra-menu">
+  <div class="cartao">
+    <a class="voltar" href="index.html">← Bússola</a>
+    <p class="eyebrow">Vitória de Setúbal · Sub-11 · 3-1-2</p>
+    <h1>Jogo do Avançado</h1>
+    <p class="sub">Vê o lance pelos teus olhos. Olha à volta antes de receber.</p>
+    <p class="aviso-deitar" id="avisoDeitar" hidden>Dica: deita o telemóvel para veres melhor.</p>
+    <ul class="lista-cenarios" id="listaCenarios"></ul>
+  </div>
+</section>
+
+<section class="ecra ecra-painel" id="ecra-pergunta" hidden>
+  <div class="cartao cartao-duas">
+    <p class="kicker">Atenção!</p>
+    <h2 id="perguntaTexto"></h2>
+    <svg id="miniMapa" viewBox="-1 -1 57 37" role="img" aria-label="Mini-mapa do campo"></svg>
+    <div class="opcoes" id="opcoesAtencao"></div>
+  </div>
+</section>
+
+<section class="ecra ecra-painel" id="ecra-decisao" hidden>
+  <div class="cartao">
+    <p class="kicker">Decide</p>
+    <h2>O que fazes?</h2>
+    <div class="opcoes" id="opcoesDecisao"></div>
+  </div>
+</section>
+
+<section class="ecra ecra-painel" id="ecra-resultado" hidden>
+  <div class="cartao">
+    <p class="kicker" id="resultadoKicker"></p>
+    <h2 id="resultadoTexto"></h2>
+    <p class="recorde" id="novoRecorde" hidden>Novo recorde!</p>
+    <ul class="estrelas" id="estrelas"></ul>
+    <p class="scans-linha" id="scansLinha"></p>
+    <div class="treinador">
+      <p class="kicker">O treinador diz</p>
+      <p id="fraseTreinador"></p>
+    </div>
+    <div class="botoes">
+      <button type="button" class="btn-primario" id="btnRepeticao" hidden>Ver repetição</button>
+      <button type="button" class="btn-fantasma" id="btnOutraVez">Jogar outra vez</button>
+      <button type="button" class="btn-fantasma" id="btnMenu">Escolher cenário</button>
+    </div>
+  </div>
+</section>
+
+<section class="ecra ecra-painel" id="ecra-repeticao" hidden>
+  <div class="cartao cartao-largo">
+    <p class="kicker">Repetição</p>
+    <canvas id="telaRepeticao" aria-label="Repetição do lance vista de cima"></canvas>
+    <p class="legenda" id="legendaRepeticao"></p>
+    <button type="button" class="btn-primario" id="btnFecharRepeticao">Fechar</button>
+  </div>
+</section>
+
+<section class="ecra ecra-cheio" id="ecra-erro" hidden>
+  <div class="cartao">
+    <h2>Este aparelho não consegue mostrar o jogo em 3D.</h2>
+    <a class="btn-primario" href="index.html">Voltar ao Bússola</a>
+  </div>
+</section>
+
+<script type="module" src="jogo/fluxo.js"></script>
+</body>
+</html>
