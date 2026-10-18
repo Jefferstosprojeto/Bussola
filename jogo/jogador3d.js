@@ -40,6 +40,7 @@ export function prepararModelo(gltf) {
       if (Math.abs(v.x - centroX) < 0.05 * altura && Math.abs(y - ALTURA_NUMERO) < 0.05) zCostas = Math.min(zCostas, v.z);
     }
   });
+  if (!Number.isFinite(zCostas)) console.warn('jogador3d: costas da camisola não encontradas, jogadores sem número');
   return {
     base,
     escala: ALTURA_JOGADOR / altura,
@@ -99,6 +100,7 @@ function texturaNumero(numero) {
 }
 
 // Cola o número nas costas, preso ao osso do peito para acompanhar a animação.
+// Tem de correr antes de o corpo ser rodado e escalado: as costas estão nas coordenadas do modelo original.
 function colarNumero(corpo, modelo, numero) {
   const osso = modelo.osso && corpo.getObjectByName(modelo.osso);
   if (!osso || !modelo.costas || numero == null) return null;
@@ -177,6 +179,8 @@ export function criarJogador3d(modelo, { cores, guardaRedes = false, numero = nu
       misturador.stopAllAction();
       misturador.uncacheRoot(corpo);
       // Geometria e materiais são partilhados entre jogadores: só se liberta o que é deste jogador.
+      // Cada clone tem esqueletos próprios, e o renderizador cria uma textura de ossos para cada um.
+      corpo.traverse((o) => { if (o.isSkinnedMesh) o.skeleton.dispose(); });
       if (placa) {
         placa.material.map.dispose();
         placa.material.dispose();
