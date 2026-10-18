@@ -6,6 +6,11 @@
     "test": "node --test \"tests/*.test.js\""
   },
   "devDependencies": {
+    "@gltf-transform/core": "^4.5.1",
+    "@gltf-transform/extensions": "^4.5.1",
+    "@gltf-transform/functions": "^4.5.1",
+    "fbx2gltf": "^0.9.7-p1",
+    "meshoptimizer": "^0.22.0",
     "yuka": "0.7.8"
   }
 }
