@@ -21,6 +21,24 @@ function semTravessoes(valor, onde) {
   else if (valor && typeof valor === 'object') for (const [k, v] of Object.entries(valor)) semTravessoes(v, `${onde}.${k}`);
 }
 
+const TIPOS_EVENTO = ['passe', 'remate', 'golo', 'perda', 'defesa'];
+const BALIZA = { zMin: (CAMPO.largura - 6) / 2 + 0.11, zMax: (CAMPO.largura + 6) / 2 - 0.11, fundo: 1.2 };
+const dentroDaBaliza = ([x, z]) => x > CAMPO.comprimento && x <= CAMPO.comprimento + BALIZA.fundo && z > BALIZA.zMin && z < BALIZA.zMax;
+
+function alturasValidas(pontos, onde) {
+  for (const p of pontos) if (p.length > 3) assert.ok(p[3] >= 0 && p[3] <= 3, `${onde}: altura ${p[3]} fora de 0 a 3`);
+}
+
+function eventosOrdenados(eventos, duracao, onde) {
+  assert.ok(Array.isArray(eventos), `${onde}: falta a lista de eventos`);
+  for (let i = 0; i < eventos.length; i++) {
+    const e = eventos[i];
+    assert.ok(TIPOS_EVENTO.includes(e.tipo), `${onde}: tipo ${e.tipo}`);
+    assert.ok(e.t >= 0 && e.t <= duracao, `${onde}: evento ${e.tipo} em t=${e.t} fora de 0 a ${duracao}`);
+    if (i > 0) assert.ok(e.t >= eventos[i - 1].t, `${onde}: eventos fora de ordem`);
+  }
+}
+
 test('ids unicos e desbloqueios apontam para cenarios anteriores', () => {
   const vistos = [];
   for (const c of CENARIOS) {
@@ -53,6 +71,11 @@ for (const c of CENARIOS) {
     };
     for (const id of ids) verificarBase(c.jogadores[id].pontos, `${c.id}.${id}`);
     verificarBase(c.bola, `${c.id}.bola`);
+    eventosOrdenados(c.eventos, c.congelaEm, `${c.id}.eventos`);
+    for (const e of c.eventos) {
+      assert.ok(['passe', 'remate'].includes(e.tipo), `${c.id}: no lance so ha passes e remates`);
+      assert.equal(c.jogadores[e.jogador]?.equipa, 'nos', `${c.id}: ${e.jogador} nao e nosso`);
+    }
 
     assert.equal(c.opcoes.length, 3);
     const opcaoIds = c.opcoes.map((o) => o.id);
@@ -78,6 +101,10 @@ for (const c of CENARIOS) {
 
       const certo = c.perguntaAtencao.pontos[v.atencaoCerta];
       assert.ok(dist(certo, noCongelamento[c.perguntaAtencao.jogador]) <= 1, `${onde}: ponto certo da pergunta nao bate com o jogador`);
+      for (const e of c.eventos) {
+        const d = dist(posicaoEm(c.bola, e.t), posicaoEm(traj[e.jogador], e.t));
+        assert.ok(d <= 1.5, `${onde}: ${e.jogador} esta a ${d.toFixed(2)} m da bola no ${e.tipo} do lance`);
+      }
 
       assert.deepEqual(Object.keys(v.consequencias).sort(), [...opcaoIds].sort(), `${onde}: uma consequencia por opcao`);
       for (const [oid, k] of Object.entries(v.consequencias)) {
@@ -96,7 +123,40 @@ for (const c of CENARIOS) {
           assert.equal(c.jogadores[id]?.equipa, 'nos', `${o}: ${id} nao e nosso`);
           verificarConsequencia(pontos, `${o}.${id}`, noCongelamento[id]);
         }
-        verificarConsequencia(k.bola, `${o}.bola`, bolaNoCongelamento);
+        const temGolo = (k.eventos || []).some((e) => e.tipo === 'golo');
+        const ultimoBola = k.bola[k.bola.length - 1];
+        if (temGolo) {
+          verificarConsequencia(k.bola.slice(0, -1), `${o}.bola`, bolaNoCongelamento);
+          assert.ok(ultimoBola[0] <= k.duracao, `${o}.bola: passa da duracao`);
+          assert.ok(dentroDaBaliza([ultimoBola[1], ultimoBola[2]]), `${o}: golo sem a bola acabar dentro da baliza`);
+        } else {
+          verificarConsequencia(k.bola, `${o}.bola`, bolaNoCongelamento);
+        }
+        alturasValidas(k.bola, `${o}.bola`);
+
+        eventosOrdenados(k.eventos, k.duracao, `${o}.eventos`);
+        const golos = k.eventos.filter((e) => e.tipo === 'golo');
+        assert.ok(golos.length <= 1, `${o}: mais do que um golo`);
+        if (golos.length) {
+          assert.equal(k.resultado, 'bom', `${o}: golo numa decisao errada`);
+          assert.ok(posicaoEm(k.bola, golos[0].t)[0] >= CAMPO.comprimento, `${o}: golo antes de a bola passar a linha`);
+        }
+        const posNoTempo = (id, t) => (k.nos[id] ? posicaoEm(k.nos[id], t) : noCongelamento[id]);
+        for (const e of k.eventos) {
+          if (e.tipo === 'golo') {
+            assert.equal(e.jogador, undefined, `${o}: golo nao tem jogador`);
+            continue;
+          }
+          const j = c.jogadores[e.jogador];
+          assert.ok(j, `${o}: ${e.tipo} de jogador desconhecido ${e.jogador}`);
+          if (e.tipo === 'passe' || e.tipo === 'remate') {
+            assert.equal(j.equipa, 'nos', `${o}: ${e.tipo} de ${e.jogador}`);
+            const d = dist(posicaoEm(k.bola, e.t), posNoTempo(e.jogador, e.t));
+            assert.ok(d <= 1.5, `${o}: ${e.jogador} esta a ${d.toFixed(2)} m da bola no ${e.tipo}`);
+          }
+          if (e.tipo === 'perda') assert.equal(j.equipa, 'eles', `${o}: perda para ${e.jogador}`);
+          if (e.tipo === 'defesa') assert.ok(j.equipa === 'eles' && j.guardaRedes, `${o}: defesa de ${e.jogador}`);
+        }
         const arthurFim = posicaoEm(k.nos.arthur, k.duracao);
         for (const [id, comp] of Object.entries(k.adversarios || {})) {
           assert.equal(c.jogadores[id]?.equipa, 'eles', `${o}: ${id} nao e adversario`);

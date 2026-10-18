@@ -1,6 +1,7 @@
 // Dados dos cenários. Coordenadas em metros: x ao longo do campo (0 na nossa linha de fundo,
 // 55 na adversária), z na largura (0 na lateral esquerda de quem ataca). Trajetórias: [tempo, x, z].
 // Nas consequências, o tempo conta a partir do congelamento.
+// Bola: [tempo, x, z, h], com h opcional (altura máxima do arco que chega a esse ponto). Eventos: { t, tipo, jogador? } marcam passes, remates, golos, perdas e defesas.
 
 export const CAMPO = { comprimento: 55, largura: 35 };
 
@@ -28,6 +29,7 @@ const costasLateral = {
     'e-av2': { equipa: 'eles', pontos: [[0, 25, 23], [7.5, 23, 19]] },
   },
   bola: [[0, 13, 17.5], [0.8, 13, 17.5], [2, 13, 6.5], [5, 20, 5.5], [7.5, 21, 5.5]],
+  eventos: [{ t: 0.8, tipo: 'passe', jogador: 'n-dc' }],
   perguntaAtencao: {
     texto: 'Onde estava o lateral adversário quando o lance parou?',
     jogador: 'e-lat',
@@ -52,7 +54,8 @@ const costasLateral = {
         profundidade: {
           duracao: 4, resultado: 'bom', texto: 'Ficaste isolado frente ao guarda-redes!',
           nos: { arthur: [[0, 41, 5], [1.5, 46, 5.5], [3, 50, 7]] },
-          bola: [[0, 21, 5.5], [1.6, 46, 5.8], [3, 50, 7.2]],
+          bola: [[0, 21, 5.5], [1.6, 46, 5.8, 2.5], [3, 50, 7.2]],
+          eventos: [{ t: 0, tipo: 'passe', jogador: 'n-de' }],
           adversarios: {
             'e-lat': { tipo: 'perseguir', alvo: 'arthur' },
             'e-cen': { tipo: 'fechar', ponto: [49, 10] },
@@ -63,15 +66,17 @@ const costasLateral = {
           duracao: 2.5, resultado: 'mau', texto: 'Recebeste, mas desperdiçaste o espaço nas costas.',
           nos: { arthur: [[0, 41, 5], [1.5, 37, 6]] },
           bola: [[0, 21, 5.5], [1.5, 36.8, 6]],
+          eventos: [{ t: 0, tipo: 'passe', jogador: 'n-de' }],
           adversarios: {
             'e-med': { tipo: 'fechar', ponto: [36, 8] },
             'e-lat': { tipo: 'perseguir', alvo: 'arthur' },
           },
         },
         fico: {
-          duracao: 2.8, resultado: 'mau', texto: 'Ficaste parado e o central chegou primeiro.',
+          duracao: 3.8, resultado: 'mau', texto: 'Ficaste parado e o central chegou primeiro.',
           nos: { arthur: [[0, 41, 5], [1.8, 41, 5]] },
           bola: [[0, 21, 5.5], [1.8, 41.52, 6.3]],
+          eventos: [{ t: 0, tipo: 'passe', jogador: 'n-de' }, { t: 1.8, tipo: 'perda', jogador: 'e-cen' }],
           adversarios: { 'e-cen': { tipo: 'fechar', ponto: [41.52, 6.3] } },
         },
       },
@@ -87,9 +92,10 @@ const costasLateral = {
       destaque: { tipo: 'pressao', centro: [40.4, 5.6], raio: 2.5, legenda: 'A vermelho: o lateral colado nas tuas costas.' },
       consequencias: {
         profundidade: {
-          duracao: 2.8, resultado: 'mau', texto: 'O central fechou o espaço e ganhou a bola.',
+          duracao: 3.8, resultado: 'mau', texto: 'O central fechou o espaço e ganhou a bola.',
           nos: { arthur: [[0, 41, 5], [1.5, 46, 6], [2.8, 47, 7]] },
-          bola: [[0, 21, 5.5], [1.8, 47, 8.5]],
+          bola: [[0, 21, 5.5], [1.8, 47, 8.5, 2.2]],
+          eventos: [{ t: 0, tipo: 'passe', jogador: 'n-de' }, { t: 1.8, tipo: 'perda', jogador: 'e-cen' }],
           adversarios: {
             'e-cen': { tipo: 'fechar', ponto: [47, 8.5] },
             'e-lat': { tipo: 'perseguir', alvo: 'arthur' },
@@ -102,12 +108,14 @@ const costasLateral = {
             'n-mc': [[0, 28, 12], [2.6, 31, 11]],
           },
           bola: [[0, 21, 5.5], [1.4, 35.8, 6.5], [2.6, 31, 11]],
+          eventos: [{ t: 0, tipo: 'passe', jogador: 'n-de' }, { t: 1.4, tipo: 'passe', jogador: 'arthur' }],
           adversarios: { 'e-lat': { tipo: 'perseguir', alvo: 'arthur' } },
         },
         fico: {
-          duracao: 2.8, resultado: 'mau', texto: 'O lateral estava colado a ti e roubou a bola.',
+          duracao: 3.8, resultado: 'mau', texto: 'O lateral estava colado a ti e roubou a bola.',
           nos: { arthur: [[0, 41, 5], [1.8, 41, 5]] },
           bola: [[0, 21, 5.5], [1.8, 40.01, 5.99]],
+          eventos: [{ t: 0, tipo: 'passe', jogador: 'n-de' }, { t: 1.8, tipo: 'perda', jogador: 'e-lat' }],
           adversarios: { 'e-lat': { tipo: 'fechar', ponto: [40.01, 5.99] } },
         },
       },
@@ -139,6 +147,7 @@ const receberCostas = {
     'e-av2': { equipa: 'eles', pontos: [[0, 26, 24], [7.5, 24, 21]] },
   },
   bola: [[0, 14, 17], [1, 15, 17], [2.5, 24.5, 15.6], [4, 26, 15.2], [7.5, 28, 14.3]],
+  eventos: [{ t: 1, tipo: 'passe', jogador: 'n-dc' }],
   perguntaAtencao: {
     texto: 'Onde estava o central adversário quando o lance parou?',
     jogador: 'e-cen',
@@ -158,9 +167,10 @@ const receberCostas = {
       destaque: { tipo: 'pressao', centro: [36.2, 12.6], raio: 2.5, legenda: 'A vermelho: o central colado nas tuas costas.' },
       consequencias: {
         rodar: {
-          duracao: 3.2, resultado: 'mau', texto: 'Rodaste com o central colado e perdeste a bola.',
+          duracao: 4, resultado: 'mau', texto: 'Rodaste com o central colado e perdeste a bola.',
           nos: { arthur: [[0, 35, 12.5], [1.2, 35.5, 12.5], [2.2, 36, 13]] },
           bola: [[0, 28, 14.3], [1.2, 35.3, 12.6], [2.2, 37.4, 13.1]],
+          eventos: [{ t: 0, tipo: 'passe', jogador: 'n-mc' }, { t: 2.2, tipo: 'perda', jogador: 'e-cen' }],
           adversarios: { 'e-cen': { tipo: 'pressionar' } },
         },
         tabelar: {
@@ -170,12 +180,14 @@ const receberCostas = {
             'n-mc': [[0, 28, 14], [2, 31, 13]],
           },
           bola: [[0, 28, 14.3], [1.2, 35, 12.6], [2, 31, 13], [3.5, 42, 9.2]],
+          eventos: [{ t: 0, tipo: 'passe', jogador: 'n-mc' }, { t: 1.2, tipo: 'passe', jogador: 'arthur' }, { t: 2, tipo: 'passe', jogador: 'n-mc' }],
           adversarios: { 'e-cen': { tipo: 'perseguir', alvo: 'arthur' } },
         },
         recuar: {
           duracao: 4, resultado: 'mau', texto: 'Recuaste e a equipa perdeu terreno. O central ficou confortável.',
           nos: { arthur: [[0, 35, 12.5], [1.2, 35, 12.5], [3, 31, 13]] },
           bola: [[0, 28, 14.3], [1.2, 35, 12.6], [3, 31.3, 13]],
+          eventos: [{ t: 0, tipo: 'passe', jogador: 'n-mc' }],
           adversarios: { 'e-cen': { tipo: 'perseguir', alvo: 'arthur' } },
         },
       },
@@ -190,7 +202,8 @@ const receberCostas = {
         rodar: {
           duracao: 5, resultado: 'bom', texto: 'Tinhas espaço, rodaste e marcaste golo!',
           nos: { arthur: [[0, 35, 12.5], [1.2, 35.3, 12.5], [3, 42, 12], [4, 46, 13]] },
-          bola: [[0, 28, 14.3], [1.2, 35, 12.6], [3, 42.5, 12.2], [4, 46.4, 13.1], [4.6, 55, 16]],
+          bola: [[0, 28, 14.3], [1.2, 35, 12.6], [3, 42.5, 12.2], [4, 46.4, 13.1], [4.75, 55.8, 16.2, 0.9]],
+          eventos: [{ t: 0, tipo: 'passe', jogador: 'n-mc' }, { t: 4, tipo: 'remate', jogador: 'arthur' }, { t: 4.4, tipo: 'defesa', jogador: 'e-gr' }, { t: 4.7, tipo: 'golo' }],
           adversarios: {
             'e-cen': { tipo: 'perseguir', alvo: 'arthur' },
             'e-gr': { tipo: 'fechar', ponto: [52, 18.5] },
@@ -203,11 +216,13 @@ const receberCostas = {
             'n-mc': [[0, 28, 14], [2.4, 29.5, 14]],
           },
           bola: [[0, 28, 14.3], [1.2, 35, 12.6], [2.4, 29.8, 14]],
+          eventos: [{ t: 0, tipo: 'passe', jogador: 'n-mc' }, { t: 1.2, tipo: 'passe', jogador: 'arthur' }],
         },
         recuar: {
           duracao: 4, resultado: 'mau', texto: 'Recuaste sem pressão. Podias ter rodado e atacado.',
           nos: { arthur: [[0, 35, 12.5], [1.2, 35, 12.5], [3, 31, 13]] },
           bola: [[0, 28, 14.3], [1.2, 35, 12.6], [3, 31.3, 13]],
+          eventos: [{ t: 0, tipo: 'passe', jogador: 'n-mc' }],
         },
       },
     },
@@ -238,6 +253,7 @@ const rematarAssistir = {
     'e-av2': { equipa: 'eles', pontos: [[0, 30, 24], [7.5, 30, 22]] },
   },
   bola: [[0, 16, 17], [1, 18, 17], [2.5, 29.7, 16.4], [4, 32, 16.2], [7.5, 36, 15.2]],
+  eventos: [{ t: 1, tipo: 'passe', jogador: 'n-dc' }],
   perguntaAtencao: {
     texto: 'Onde estava o central adversário quando o lance parou?',
     jogador: 'e-cen',
@@ -257,9 +273,10 @@ const rematarAssistir = {
       destaque: { tipo: 'pressao', centro: [47.2, 12], raio: 2.5, legenda: 'A vermelho: o central à tua frente.' },
       consequencias: {
         rematar: {
-          duracao: 2.8, resultado: 'mau', texto: 'O central estava na frente e bloqueou o remate.',
+          duracao: 3.8, resultado: 'mau', texto: 'O central estava na frente e bloqueou o remate.',
           nos: { arthur: [[0, 46, 12], [1.2, 46.2, 12.2]] },
           bola: [[0, 36, 15.2], [1.2, 46, 12.2], [1.8, 47.57, 11.93]],
+          eventos: [{ t: 0, tipo: 'passe', jogador: 'n-mc' }, { t: 1.2, tipo: 'remate', jogador: 'arthur' }, { t: 1.8, tipo: 'perda', jogador: 'e-cen' }],
           adversarios: { 'e-cen': { tipo: 'fechar', ponto: [47.57, 11.93] } },
         },
         passar: {
@@ -268,13 +285,15 @@ const rematarAssistir = {
             arthur: [[0, 46, 12], [1.2, 46.2, 12.2]],
             'n-ad': [[0, 47, 21], [2, 48, 20]],
           },
-          bola: [[0, 36, 15.2], [1.2, 46, 12.2], [2, 48, 20], [2.8, 55, 18.5]],
+          bola: [[0, 36, 15.2], [1.2, 46, 12.2], [2, 48, 20], [2.9, 55.8, 18.3, 0.7]],
+          eventos: [{ t: 0, tipo: 'passe', jogador: 'n-mc' }, { t: 1.2, tipo: 'passe', jogador: 'arthur' }, { t: 2, tipo: 'remate', jogador: 'n-ad' }, { t: 2.5, tipo: 'defesa', jogador: 'e-gr' }, { t: 2.85, tipo: 'golo' }],
           adversarios: { 'e-gr': { tipo: 'fechar', ponto: [51, 17] } },
         },
         driblar: {
-          duracao: 3.2, resultado: 'mau', texto: 'Com o central colado, o drible não passou.',
+          duracao: 4, resultado: 'mau', texto: 'Com o central colado, o drible não passou.',
           nos: { arthur: [[0, 46, 12], [1.2, 46.2, 12.2], [2.2, 47, 12.4]] },
           bola: [[0, 36, 15.2], [1.2, 46, 12.2], [2.2, 48.4, 12.4]],
+          eventos: [{ t: 0, tipo: 'passe', jogador: 'n-mc' }, { t: 2.2, tipo: 'perda', jogador: 'e-cen' }],
           adversarios: { 'e-cen': { tipo: 'pressionar' } },
         },
       },
@@ -289,19 +308,22 @@ const rematarAssistir = {
         rematar: {
           duracao: 3, resultado: 'bom', texto: 'Tinhas a linha livre e remataste de primeira. Golo!',
           nos: { arthur: [[0, 46, 12], [1.2, 46.2, 12.2]] },
-          bola: [[0, 36, 15.2], [1.2, 46, 12.2], [2, 55, 16]],
+          bola: [[0, 36, 15.2], [1.2, 46, 12.2], [2.1, 55.8, 16.3, 0.9]],
+          eventos: [{ t: 0, tipo: 'passe', jogador: 'n-mc' }, { t: 1.2, tipo: 'remate', jogador: 'arthur' }, { t: 1.75, tipo: 'defesa', jogador: 'e-gr' }, { t: 2.05, tipo: 'golo' }],
           adversarios: { 'e-gr': { tipo: 'fechar', ponto: [52, 18] } },
         },
         passar: {
-          duracao: 2.8, resultado: 'mau', texto: 'O central estava a marcar o teu colega e cortou o passe.',
+          duracao: 3.8, resultado: 'mau', texto: 'O central estava a marcar o teu colega e cortou o passe.',
           nos: { arthur: [[0, 46, 12], [1.2, 46.2, 12.2]] },
           bola: [[0, 36, 15.2], [1.2, 46, 12.2], [2, 47.4, 19.8]],
+          eventos: [{ t: 0, tipo: 'passe', jogador: 'n-mc' }, { t: 1.2, tipo: 'passe', jogador: 'arthur' }, { t: 2, tipo: 'perda', jogador: 'e-cen' }],
           adversarios: { 'e-cen': { tipo: 'fechar', ponto: [47.4, 19.8] } },
         },
         driblar: {
           duracao: 3.6, resultado: 'mau', texto: 'Tinhas linha de remate e perdeste tempo. O guarda-redes chegou.',
           nos: { arthur: [[0, 46, 12], [1.2, 46.2, 12.2], [2.6, 49, 13]] },
           bola: [[0, 36, 15.2], [1.2, 46, 12.2], [2.6, 49.99, 13.99]],
+          eventos: [{ t: 0, tipo: 'passe', jogador: 'n-mc' }, { t: 2.6, tipo: 'defesa', jogador: 'e-gr' }],
           adversarios: { 'e-gr': { tipo: 'fechar', ponto: [49.99, 13.99] } },
         },
       },

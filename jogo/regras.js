@@ -116,3 +116,53 @@ export function pitchParaBola(dist, alturaOlhos, raioBola) {
   const p = -Math.atan2(alturaOlhos - raioBola, Math.max(dist, 0.5));
   return Math.max(-0.6, Math.min(0, p));
 }
+
+// Altura da bola: o 4.º valor de um ponto [t, x, z, h] é a altura máxima do arco do troço que chega a esse ponto.
+export function alturaEm(pontos, t) {
+  for (let i = 1; i < pontos.length; i++) {
+    const t0 = pontos[i - 1][0];
+    const [t1, , , h = 0] = pontos[i];
+    if (t >= t0 && t <= t1) {
+      if (!h || t1 === t0) return 0;
+      const f = (t - t0) / (t1 - t0);
+      return 4 * h * f * (1 - f);
+    }
+  }
+  return 0;
+}
+
+export const CHAVE_SOM = 'bussola-jogo-som';
+export const CHAVE_GIROSCOPIO = 'bussola-jogo-giroscopio';
+
+export function criarPreferencias(storage) {
+  return {
+    lerBool(chave, defeito) {
+      try {
+        const v = storage ? storage.getItem(chave) : null;
+        if (v === '1') return true;
+        if (v === '0') return false;
+        return defeito;
+      } catch {
+        return defeito;
+      }
+    },
+    guardarBool(chave, valor) {
+      try {
+        if (storage) storage.setItem(chave, valor ? '1' : '0');
+      } catch {
+        // Sem armazenamento: a escolha vale só nesta sessão.
+      }
+    },
+  };
+}
+
+// Espera pela promessa no máximo `ms`; se falhar ou demorar, resolve com null.
+export function comLimite(promessa, ms) {
+  return new Promise((resolver) => {
+    const temporizador = setTimeout(() => resolver(null), ms);
+    Promise.resolve(promessa).then(
+      (v) => { clearTimeout(temporizador); resolver(v); },
+      () => { clearTimeout(temporizador); resolver(null); },
+    );
+  });
+}

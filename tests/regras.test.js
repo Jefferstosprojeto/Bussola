@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   posicaoEm, trajetoriasDaVariante, sortearVariante, criarContadorScans,
   calcularEstrelas, criarArmazem, estaDesbloqueado, yawParaPonto, alvoCamara, pitchParaBola,
+  alturaEm, criarPreferencias, comLimite,
   LIMIAR_SCAN, CHAVE_RECORDES,
 } from '../jogo/regras.js';
 
@@ -123,4 +124,39 @@ test('pitchParaBola baixa a cabeca para a bola e fica entre -0,6 e 0', () => {
   assert.equal(pitchParaBola(0.7, 1.4, 0.11), -0.6);
   assert.equal(pitchParaBola(0.2, 1.4, 0.11), -0.2, 'bola nos pes: olha em frente');
   assert.ok(pitchParaBola(3, 1.4, 0.11) < longe);
+});
+
+test('alturaEm: arco com pico a meio do troco e chao fora dele', () => {
+  const p = [[0, 0, 0], [2, 10, 0, 3], [3, 12, 0]];
+  assert.equal(alturaEm(p, -1), 0);
+  assert.equal(alturaEm(p, 0), 0);
+  assert.ok(Math.abs(alturaEm(p, 1) - 3) < 1e-9);
+  assert.ok(Math.abs(alturaEm(p, 0.5) - 2.25) < 1e-9);
+  assert.equal(alturaEm(p, 2), 0);
+  assert.equal(alturaEm(p, 2.5), 0);
+  assert.equal(alturaEm(p, 9), 0);
+});
+
+test('posicaoEm ignora o 4.o valor (altura)', () => {
+  assert.deepEqual(posicaoEm([[0, 0, 0], [2, 10, 0, 3]], 1), [5, 0]);
+});
+
+test('preferencias: sem storage, storage que falha e ida e volta', () => {
+  assert.equal(criarPreferencias(null).lerBool('k', true), true);
+  const falha = { getItem() { throw new Error('x'); }, setItem() { throw new Error('x'); } };
+  const pf = criarPreferencias(falha);
+  assert.equal(pf.lerBool('k', false), false);
+  assert.doesNotThrow(() => pf.guardarBool('k', true));
+  const mapa = new Map();
+  const pm = criarPreferencias({ getItem: (k) => mapa.get(k) ?? null, setItem: (k, v) => mapa.set(k, v) });
+  pm.guardarBool('k', false);
+  assert.equal(pm.lerBool('k', true), false);
+  pm.guardarBool('k', true);
+  assert.equal(pm.lerBool('k', false), true);
+});
+
+test('comLimite: valor, rejeicao e tempo esgotado', async () => {
+  assert.equal(await comLimite(Promise.resolve(7), 50), 7);
+  assert.equal(await comLimite(Promise.reject(new Error('x')), 50), null);
+  assert.equal(await comLimite(new Promise(() => {}), 10), null);
 });
