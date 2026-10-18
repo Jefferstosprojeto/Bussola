@@ -3,10 +3,14 @@ import assert from 'node:assert/strict';
 import { criarSom, SONS } from '../jogo/som.js';
 
 function contextoFalso() {
-  const registo = { iniciados: [], parados: 0, retomado: 0 };
+  const registo = { iniciados: [], parados: 0, retomado: 0, ganhos: [] };
   class Ctx {
     constructor() { this.state = 'suspended'; this.destination = {}; }
-    createGain() { return { gain: { value: 1 }, connect(n) { return n; } }; }
+    createGain() {
+      const g = { gain: { value: 1 }, connect(n) { return n; } };
+      registo.ganhos.push(g);
+      return g;
+    }
     createBufferSource() {
       return {
         buffer: null, loop: false,
@@ -62,4 +66,44 @@ test('ambiente em ciclo, so uma vez, e para', async () => {
   assert.equal(registo.parados, 2);
   s.desbloquear();
   assert.equal(registo.retomado, 1);
+});
+
+test('ambiente sem sons carregados nao fica preso: tenta outra vez depois', async () => {
+  const { Ctx, registo } = contextoFalso();
+  let falhar = true;
+  const s = criarSom({ janela: { AudioContext: Ctx }, buscar: async () => resposta(!falhar) });
+  await s.carregar();
+  s.iniciarAmbiente();
+  assert.equal(registo.iniciados.length, 0);
+  falhar = false;
+  await s.carregar();
+  s.iniciarAmbiente();
+  assert.equal(registo.iniciados.length, 2);
+  assert.ok(registo.iniciados.every((f) => f.loop));
+});
+
+test('desbloquear retoma tambem o estado interrupted do Safari', () => {
+  const { Ctx, registo } = contextoFalso();
+  class CtxInterrompido extends Ctx {
+    constructor() { super(); this.state = 'interrupted'; }
+  }
+  const s = criarSom({ janela: { AudioContext: CtxInterrompido }, buscar: async () => resposta() });
+  s.desbloquear();
+  assert.equal(registo.retomado, 1);
+  s.desbloquear();
+  assert.equal(registo.retomado, 1);
+});
+
+test('definirLigado muda o volume mestre entre 0 e 1', async () => {
+  const { Ctx, registo } = contextoFalso();
+  const s = criarSom({ janela: { AudioContext: Ctx }, buscar: async () => resposta() });
+  await s.carregar();
+  const mestre = registo.ganhos[0];
+  assert.equal(mestre.gain.value, 1);
+  s.definirLigado(false);
+  assert.equal(mestre.gain.value, 0);
+  assert.equal(s.ligado, false);
+  s.definirLigado(true);
+  assert.equal(mestre.gain.value, 1);
+  assert.equal(s.ligado, true);
 });

@@ -69,7 +69,8 @@ export function criarSom({ ligado = true, janela = globalThis, buscar = (url) =>
     // Chamar num toque ou tecla: o iPhone só deixa tocar depois de um gesto do utilizador.
     desbloquear() {
       const c = contexto();
-      if (c && c.state === 'suspended') c.resume().catch(() => {});
+      // O Safari pode dizer 'interrupted' em vez de 'suspended'.
+      if (c && (c.state === 'suspended' || c.state === 'interrupted')) c.resume().catch(() => {});
     },
     tocar(nome) {
       try {
@@ -80,7 +81,6 @@ export function criarSom({ ligado = true, janela = globalThis, buscar = (url) =>
     },
     iniciarAmbiente() {
       if (ambiente) return;
-      ambiente = true;
       for (const n of CICLOS) {
         try {
           const f = fonte(n, true);
@@ -89,6 +89,8 @@ export function criarSom({ ligado = true, janela = globalThis, buscar = (url) =>
           // Sem este ciclo.
         }
       }
+      // Só fica ligado se algum ciclo arrancou: assim pode tentar-se outra vez depois de carregar.
+      ambiente = ciclos.length > 0;
     },
     pararAmbiente() {
       ambiente = false;
