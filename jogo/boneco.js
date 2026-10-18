@@ -72,6 +72,8 @@ export function criarBoneco({ camisola, calcoes }) {
       bracoE.rotation.x = -s * 0.8;
       bracoD.rotation.x = s * 0.8;
     },
+    // Os bonecos simples não têm gestos; existe para terem a mesma interface do jogador3d.
+    gesto() {},
     libertar() {
       grupo.traverse((o) => {
         if (o.geometry) o.geometry.dispose();
