@@ -70,7 +70,7 @@ export function criarTorcida(cena, lugaresOriginais, campo) {
         float salto = uSalto * pulo * 0.4;
         if (parte > 1.5 && parte < 2.5) {
           float lado = sign(position.x);
-          float ang = max(uMaos * 2.7, uSalto * (1.6 + 1.2 * pulo));
+          float ang = max(uMaos * 2.2, uSalto * (1.6 + 1.2 * pulo));
           ang = max(ang, uAplauso * (1.3 + 0.25 * sin(uTempo * 14.0 + fase)));
           vec2 ombro = vec2(lado * 0.27, 0.75);
           vec2 p = transformed.xy - ombro;

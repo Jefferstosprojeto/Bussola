@@ -102,7 +102,7 @@
   .interruptor input{width:20px;height:20px;accent-color:var(--verde)}
   .nota{margin:0;font-size:13px;color:var(--tinta-suave)}
   .creditos{font-size:12px;color:var(--tinta-suave)}
-  .hud-som{pointer-events:auto;position:absolute;top:max(12px,env(safe-area-inset-top));left:calc(max(12px,env(safe-area-inset-left)) + 84px);width:38px;height:34px;display:grid;place-items:center;background:rgba(10,35,24,.72);color:#fff;border:none;border-radius:999px;cursor:pointer}
+  .hud-som{pointer-events:auto;position:absolute;top:max(12px,env(safe-area-inset-top));left:calc(max(12px,env(safe-area-inset-left)) + 96px);width:44px;height:44px;display:grid;place-items:center;background:rgba(10,35,24,.72);color:#fff;border:none;border-radius:999px;cursor:pointer}
   .hud-som svg{width:20px;height:20px}
   .hud-som .risco{display:none}
   .hud-som.desligado .risco{display:inline}
@@ -225,8 +225,9 @@
 
 <script>
   // Se o jogo não arrancar (sem internet, CDN em baixo, browser antigo), mostra a falha em vez de um menu vazio.
-  window.mostrarFalha = function () {
-    if (window.__jogoArrancou) return;
+  // forcar: mostra a falha mesmo com o jogo já a correr (por exemplo, quando o WebGL se perde).
+  window.mostrarFalha = function (forcar) {
+    if (window.__jogoArrancou && forcar !== true) return;
     var ecras = document.querySelectorAll('.ecra');
     for (var i = 0; i < ecras.length; i++) ecras[i].hidden = true;
     document.getElementById('hud').hidden = true;

@@ -77,10 +77,29 @@ export function criarMotor(canvas, { modelo = null, som = null, giroscopio = nul
   let pausado = false;
   let largura = 0;
   let altura = 0;
+  // Desligar as sombras recompila todos os programas: fica para a próxima pausa do lance.
+  let sombrasPorDesligar = false;
+  // Um primeiro quadro atrás do menu compila os programas do estádio enquanto se escolhe o lance.
+  let aquecido = false;
+
+  function desligarSombrasPendentes() {
+    if (!sombrasPorDesligar) return;
+    sombrasPorDesligar = false;
+    estadio.definirSombras(false);
+  }
 
   document.addEventListener('visibilitychange', () => {
     pausado = document.hidden;
     relogio.getDelta();
+    if (document.hidden) som?.suspender?.();
+    else som?.retomar?.();
+  });
+
+  // Se o telemóvel tirar o WebGL ao jogo, mostra o ecrã de falha (o botão volta a carregar a página).
+  canvas.addEventListener('webglcontextlost', (ev) => {
+    ev.preventDefault();
+    som?.pararAmbiente?.();
+    if (typeof window.mostrarFalha === 'function') window.mostrarFalha(true);
   });
 
   function ajustarTamanho() {
@@ -199,6 +218,7 @@ export function criarMotor(canvas, { modelo = null, som = null, giroscopio = nul
     if (e.t >= c.congelaEm) {
       e.fase = 'congelado';
       olhar.ativo = false;
+      desligarSombrasPendentes();
       if (e.callbacks.aoCongelar) e.callbacks.aoCongelar();
     }
   }
@@ -288,15 +308,19 @@ export function criarMotor(canvas, { modelo = null, som = null, giroscopio = nul
       if (estado) atualizarCamara();
       if (emJogo && medidor.registar(dtReal)) {
         torcida.definirQualidade('baixa');
-        estadio.definirSombras(false);
+        sombrasPorDesligar = true;
       }
     }
+    // Sem lance, o menu opaco tapa tudo: não vale a pena ocupar a placa gráfica.
+    if (!estado && aquecido) return;
     renderer.render(cena, camara);
+    aquecido = true;
   }
   requestAnimationFrame(quadro);
 
   return {
     jogar(cenario, varianteId, callbacks = {}) {
+      desligarSombrasPendentes();
       limparBonecos();
       const traj = trajetoriasDaVariante(cenario, varianteId);
       for (const [id, j] of Object.entries(cenario.jogadores)) {
