@@ -117,13 +117,22 @@ export function criarTorcida(cena, lugaresOriginais, campo) {
       .replace('#include <begin_vertex>', '#include <begin_vertex>\ntransformed.z += sin(position.x * 4.0 + uTempo * 6.0) * 0.08 * (position.x + 0.7);');
   };
   const geoBandeira = new THREE.PlaneGeometry(1.4, 0.9, 10, 1).translate(0.7, 0, 0);
+  // Mastro fino do lugar até à ponta esquerda da bandeira, para não ficar a flutuar.
+  const geoMastro = new THREE.CylinderGeometry(0.02, 0.02, 1.6, 6).translate(0, 0.8, 0);
+  const matMastro = new THREE.MeshLambertMaterial({ color: '#9A9A9A' });
   const baixos = lugares.filter((l) => l.y < 2.6);
   for (let i = 0; i < N_BANDEIRAS && baixos.length; i++) {
     const l = baixos[Math.floor(Math.random() * baixos.length)];
+    const X = l.x - campo.comprimento / 2;
+    const Z = l.z - campo.largura / 2;
     const b = new THREE.Mesh(geoBandeira, matBandeira);
-    b.position.set(l.x - campo.comprimento / 2, l.y + 1.6, l.z - campo.largura / 2);
-    b.rotation.y = l.rotY + Math.PI / 2;
+    b.position.set(X, l.y + 1.6, Z);
+    // A face da bandeira (normal +z local) fica virada para o campo, como o adepto.
+    b.rotation.y = l.rotY;
     cena.add(b);
+    const mastro = new THREE.Mesh(geoMastro, matMastro);
+    mastro.position.set(X, l.y, Z);
+    cena.add(mastro);
   }
 
   let tempo = 0;
