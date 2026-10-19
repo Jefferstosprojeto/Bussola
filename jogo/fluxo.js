@@ -2,9 +2,12 @@
 import { CAMPO, CENARIOS } from './cenarios.js';
 import { criarMotor } from './motor.js';
 import { criarRepeticao } from './repeticao.js';
+import { carregarModelo } from './carregador.js';
+import { criarGiroscopio } from './giroscopio.js';
+import { criarSom } from './som.js';
 import {
-  calcularEstrelas, criarArmazem, criarContadorScans, estaDesbloqueado,
-  posicaoEm, sortearVariante, trajetoriasDaVariante, JANELA_SCAN,
+  calcularEstrelas, criarArmazem, criarContadorScans, criarPreferencias, estaDesbloqueado,
+  posicaoEm, sortearVariante, trajetoriasDaVariante, CHAVE_GIROSCOPIO, CHAVE_SOM, JANELA_SCAN,
 } from './regras.js';
 
 const $ = (id) => document.getElementById(id);
@@ -21,6 +24,10 @@ function armazenamentoSeguro() {
 }
 
 const armazem = criarArmazem(armazenamentoSeguro());
+const preferencias = criarPreferencias(armazenamentoSeguro());
+let som = null;
+let giroscopio = null;
+let temporizadorGolo = 0;
 let motor = null;
 let jogada = null;
 let teclasAtivas = null;
@@ -40,6 +47,87 @@ function textoBloqueado(cenario) {
   const d = cenario.desbloqueio;
   const outro = CENARIOS.find((c) => c.id === d.cenario);
   return `Faz ${d.estrelas} estrelas em «${outro.nome}» para abrir.`;
+}
+
+function mostrarProgresso(f) {
+  const pct = Math.round(Math.max(0, Math.min(1, f)) * 100);
+  $('carregarTexto').textContent = `A preparar o estádio... ${pct}%`;
+  $('barraEnchimento').style.width = pct + '%';
+  $('barraCarregar').setAttribute('aria-valuenow', String(pct));
+}
+
+function aplicarSom(ligado) {
+  som.definirLigado(ligado);
+  preferencias.guardarBool(CHAVE_SOM, ligado);
+  $('optSom').checked = ligado;
+  const b = $('btnSomHud');
+  b.setAttribute('aria-pressed', String(ligado));
+  b.setAttribute('aria-label', ligado ? 'Desligar o som' : 'Ligar o som');
+  b.classList.toggle('desligado', !ligado);
+}
+
+function mostrarNotaGiro(texto) {
+  $('notaGiro').textContent = texto;
+  $('notaGiro').hidden = !texto;
+}
+
+function atualizarGiro() {
+  const quer = $('optGiro').checked;
+  const falta = quer && giroscopio.precisaAutorizacao && !giroscopio.autorizado;
+  $('btnAtivarMovimento').hidden = !falta;
+  if (quer && !falta) giroscopio.ligar();
+  else giroscopio.desligar();
+}
+
+// No iPhone, a autorização só pode ser pedida num toque do utilizador.
+async function ativarMovimento() {
+  const ok = await giroscopio.pedirAutorizacao();
+  if (!ok) {
+    $('optGiro').checked = false;
+    preferencias.guardarBool(CHAVE_GIROSCOPIO, false);
+    mostrarNotaGiro('Sem autorização. Usa o dedo para olhar à volta.');
+  } else {
+    mostrarNotaGiro('');
+  }
+  atualizarGiro();
+}
+
+function prepararDefinicoes() {
+  $('optSom').addEventListener('change', (ev) => aplicarSom(ev.target.checked));
+  $('btnSomHud').addEventListener('click', () => aplicarSom(!som.ligado));
+  aplicarSom(som.ligado);
+  if (giroscopio.disponivel) {
+    $('linhaGiro').hidden = false;
+    $('optGiro').checked = preferencias.lerBool(CHAVE_GIROSCOPIO, true);
+    $('optGiro').addEventListener('change', (ev) => {
+      preferencias.guardarBool(CHAVE_GIROSCOPIO, ev.target.checked);
+      mostrarNotaGiro('');
+      if (ev.target.checked && giroscopio.precisaAutorizacao && !giroscopio.autorizado) ativarMovimento();
+      else atualizarGiro();
+    });
+    $('btnAtivarMovimento').addEventListener('click', ativarMovimento);
+    atualizarGiro();
+  }
+  // O iPhone só deixa tocar som depois de um gesto do utilizador.
+  const desbloquear = () => som.desbloquear();
+  document.addEventListener('pointerdown', desbloquear, { capture: true, passive: true });
+  document.addEventListener('keydown', desbloquear, { capture: true });
+}
+
+function mostrarGolo() {
+  const g = $('golo');
+  clearTimeout(temporizadorGolo);
+  g.hidden = false;
+  g.classList.remove('mostra');
+  void g.offsetWidth; // recomeça a animação
+  g.classList.add('mostra');
+  temporizadorGolo = setTimeout(esconderGolo, 1800);
+}
+
+function esconderGolo() {
+  clearTimeout(temporizadorGolo);
+  $('golo').hidden = true;
+  $('golo').classList.remove('mostra');
 }
 
 function desenharMenu() {
@@ -73,6 +161,8 @@ function desenharMenu() {
     li.append(info, b);
     lista.appendChild(li);
   }
+  $('definicoes').hidden = false;
+  esconderGolo();
   mostrar('menu');
 }
 
@@ -80,13 +170,14 @@ function mostrarDica() {
   const d = $('dica');
   d.textContent = matchMedia('(pointer: fine)').matches
     ? 'Usa o rato ou as setas para olhar à volta'
-    : 'Arrasta o dedo para olhar à volta';
+    : giroscopio?.ligado ? 'Roda o telemóvel ou arrasta o dedo para olhar à volta' : 'Arrasta o dedo para olhar à volta';
   d.classList.remove('some');
   clearTimeout(temporizadorDica);
   temporizadorDica = setTimeout(() => d.classList.add('some'), 3500);
 }
 
 function iniciar(cenario) {
+  esconderGolo();
   const forcada = params.get('variante');
   const varianteId = forcada && cenario.variantes[forcada] ? forcada : sortearVariante(cenario);
   const atual = {
@@ -226,6 +317,7 @@ function mostrarDecisao() {
     mostrar(null);
     $('dica').classList.add('some');
     motor.continuar(atual.opcaoId, {
+      aoGolo: () => { if (jogada === atual) mostrarGolo(); },
       aoTerminar: (frames) => {
         if (jogada !== atual) return;
         atual.frames = frames;
@@ -270,11 +362,13 @@ function mostrarResultado() {
 
 function ligarBotoes() {
   $('btnSair').addEventListener('click', () => {
+    esconderGolo();
     motor.parar();
     desenharMenu();
   });
   $('btnOutraVez').addEventListener('click', () => iniciar(jogada.cenario));
   $('btnMenu').addEventListener('click', () => {
+    esconderGolo();
     motor.parar();
     desenharMenu();
   });
@@ -302,16 +396,27 @@ function ligarBotoes() {
   });
 }
 
-function arrancar() {
+async function arrancar() {
   window.__jogoArrancou = true;
   $('ecra-falha').hidden = true;
+  mostrar('menu');
+  som = criarSom({ ligado: preferencias.lerBool(CHAVE_SOM, true) });
+  giroscopio = criarGiroscopio();
+  let pModelo = 0;
+  let pSom = 0;
+  const progresso = () => mostrarProgresso(pModelo * 0.8 + pSom * 0.2);
+  const [modelo] = await Promise.all([
+    carregarModelo((f) => { pModelo = f; progresso(); }),
+    som.carregar((f) => { pSom = f; progresso(); }),
+  ]);
   try {
-    motor = criarMotor($('cena'));
+    motor = criarMotor($('cena'), { modelo, som, giroscopio });
   } catch {
     mostrar('erro');
     return;
   }
   ligarBotoes();
+  prepararDefinicoes();
   desenharMenu();
   const direto = CENARIOS.find((c) => c.id === params.get('cenario'));
   if (direto) iniciar(direto);
