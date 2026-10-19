@@ -1,0 +1,37 @@
+Sons do Jogo do Avançado
+========================
+
+Todos os sons são gravações reais, cortadas e convertidas (mono, 64 kbps) para o jogo.
+
+estadio.mp3 e canticos.mp3
+  Original: "WWS FootballAustriavs.Sweden.ogg" (jogo de qualificação Áustria x Suécia, Viena, 2014),
+  gravado na bancada do Estádio Ernst Happel.
+  Autor: Work With Sounds / Torsten Nilsson
+  Endereço: https://commons.wikimedia.org/wiki/File:WWS_FootballAustriavs.Sweden.ogg
+  Licença: Creative Commons Atribuição 4.0 Internacional (CC BY 4.0)
+           https://creativecommons.org/licenses/by/4.0/
+  Alterações: excertos de 20 s, mono, normalização de volume e fades.
+
+golo.mp3
+  Original: "Crazy Soccer Crowd Cheering"
+  Autor: freesound_community (Pixabay)
+  Endereço: https://pixabay.com/sound-effects/people-crazy-soccer-crowd-cheering-72194/
+  Licença: Pixabay Content License (uso gratuito, sem atribuição obrigatória)
+
+uuuh.mp3
+  Original: "Crowd Disappointment Reaction"
+  Autor: Universfield (Pixabay)
+  Endereço: https://pixabay.com/sound-effects/people-crowd-disappointment-reaction-352718/
+  Licença: Pixabay Content License (uso gratuito, sem atribuição obrigatória)
+
+apito.mp3
+  Original: "Plastic Whistle #1"
+  Autor: Joseph Sardin, BigSoundBank
+  Endereço: https://bigsoundbank.com/plastic-whistle-s1017.html
+  Licença: CC0 (domínio público)
+
+aplauso.mp3
+  Original: "Applause: 600 People"
+  Autor: Joseph Sardin, BigSoundBank
+  Endereço: https://bigsoundbank.com/applause-600-people-s0021.html
+  Licença: CC0 (domínio público)
