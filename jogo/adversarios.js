@@ -18,21 +18,28 @@ const PARAMETROS = {
 export function criarReacao(comportamentos, posicoesIniciais) {
   const gestor = new EntityManager();
   const agentes = new Map();
-  for (const [id, c] of Object.entries(comportamentos)) {
-    const inicio = posicoesIniciais[id];
-    const p = PARAMETROS[c.tipo];
-    if (!inicio || !p) continue;
+
+  function novoAgente(id, inicio, tipo) {
+    const p = PARAMETROS[tipo];
     const v = new Vehicle();
     v.maxSpeed = VELOCIDADE_MAX;
     v.maxForce = 40;
     v.position.set(inicio[0], 0, inicio[1]);
     const alvo = new Vector3();
-    if (c.tipo === 'fechar') alvo.set(c.ponto[0], 0, c.ponto[1]);
     const chegada = new ArriveBehavior(alvo, p.desaceleracao, p.tolerancia);
     chegada.weight = PESO_CHEGADA;
     v.steering.add(chegada);
     gestor.add(v);
-    agentes.set(id, { v, alvo, tipo: c.tipo });
+    const a = { v, alvo, tipo, chegada };
+    agentes.set(id, a);
+    return a;
+  }
+
+  for (const [id, c] of Object.entries(comportamentos)) {
+    const inicio = posicoesIniciais[id];
+    if (!inicio || !PARAMETROS[c.tipo]) continue;
+    const a = novoAgente(id, inicio, c.tipo);
+    if (c.tipo === 'fechar') a.alvo.set(c.ponto[0], 0, c.ponto[1]);
   }
   return {
     ids: () => [...agentes.keys()],
@@ -61,6 +68,19 @@ export function criarReacao(comportamentos, posicoesIniciais) {
     posicao(id) {
       const a = agentes.get(id);
       return a ? [a.v.position.x, a.v.position.z] : null;
+    },
+    // Quem rouba a bola foge com ela: passa a "fechar" para o ponto de fuga.
+    redirecionar(id, ponto, inicio) {
+      let a = agentes.get(id);
+      if (!a) {
+        if (!inicio) return;
+        a = novoAgente(id, inicio, 'fechar');
+      }
+      // Passa a chegar como quem fecha (trava no ponto), não como quem persegue (para a 0,8 m).
+      a.tipo = 'fechar';
+      a.chegada.deceleration = PARAMETROS.fechar.desaceleracao;
+      a.chegada.tolerance = PARAMETROS.fechar.tolerancia;
+      a.alvo.set(ponto[0], 0, ponto[1]);
     },
   };
 }

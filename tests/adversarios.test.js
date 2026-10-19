@@ -57,3 +57,21 @@ test('sem comportamentos nao rebenta', () => {
   r.atualizar(DT, { arthur: [0, 0], bola: [0, 0] });
   assert.deepEqual(r.ids(), []);
 });
+
+test('redirecionar um perseguidor manda-o para o ponto de fuga', () => {
+  const r = criarReacao({ a: { tipo: 'perseguir', alvo: 'arthur' } }, { a: [20, 10] });
+  r.redirecionar('a', [6, 10]);
+  for (let i = 0; i < 240; i++) r.atualizar(DT, { arthur: [20, 10], bola: [20, 10] });
+  assert.ok(dist(r.posicao('a'), [6, 10]) < 0.6, `ficou em ${r.posicao('a')}`);
+});
+
+test('redirecionar quem nao reagia cria-o no inicio; sem inicio nao faz nada', () => {
+  const r = criarReacao({}, {});
+  r.redirecionar('b', [5, 5]);
+  assert.deepEqual(r.ids(), []);
+  r.redirecionar('b', [5, 5], [15, 5]);
+  assert.deepEqual(r.ids(), ['b']);
+  assert.deepEqual(r.posicao('b'), [15, 5]);
+  for (let i = 0; i < 180; i++) r.atualizar(DT, { arthur: [0, 0], bola: [0, 0] });
+  assert.ok(dist(r.posicao('b'), [5, 5]) < 0.6);
+});
