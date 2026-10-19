@@ -149,6 +149,13 @@ export function criarTorcida(cena, lugaresOriginais, campo) {
       u.uMaos.value = reacao?.tipo === 'falhanco' ? k : 0;
       u.uAplauso.value = reacao?.tipo === 'aplauso' ? k : 0;
     },
+    // Novo lance: a torcida volta ao repouso, sem reações penduradas do anterior.
+    reiniciar() {
+      reacao = null;
+      u.uSalto.value = 0;
+      u.uMaos.value = 0;
+      u.uAplauso.value = 0;
+    },
     definirQualidade(nivel) {
       malha.count = nivel === 'baixa' ? Math.floor(n / 2) : n;
     },

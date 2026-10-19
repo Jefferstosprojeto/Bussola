@@ -220,14 +220,16 @@ export function criarMotor(canvas, { modelo = null, som = null, giroscopio = nul
   function passoConsequencia(dt) {
     const e = estado;
     const k = e.cons;
-    const fim = k.duracao + (e.golo ? TEMPO_FESTEJO : 0);
-    e.tc = Math.min(fim, e.tc + dt);
+    const fimAntes = k.duracao + (e.golo ? TEMPO_FESTEJO : 0);
+    e.tc = Math.min(fimAntes, e.tc + dt);
     const t = Math.min(e.tc, k.duracao);
     if (!e.ladrao) colocarBola(posicaoEm(k.bola, t), alturaEm(k.bola, t));
     moverArthur(posicaoEm(k.nos.arthur, t), dt);
     e.reacao.atualizar(dt, { arthur: e.arthur, bola: e.bola });
     for (const id of bonecos.keys()) {
-      const p = k.nos[id] ? posicaoEm(k.nos[id], t) : e.reacao.posicao(id) || e.congelado[id];
+      // Quem roubou a bola segue a fuga da reação, mesmo que tenha trajetória em k.nos.
+      const fuga = id === e.ladrao ? e.reacao.posicao(id) : null;
+      const p = fuga || (k.nos[id] ? posicaoEm(k.nos[id], t) : e.reacao.posicao(id) || e.congelado[id]);
       colocarJogador(id, afastarDeArthur(p), dt);
     }
     // Quem roubou leva a bola à frente dos pés.
@@ -253,6 +255,8 @@ export function criarMotor(canvas, { modelo = null, som = null, giroscopio = nul
     const alvoPitch = e.golo ? PITCH_FESTEJO : pitchParaBola(distBola, ALTURA_OLHOS, RAIO_BOLA);
     e.pitch += (alvoPitch - e.pitch) * suave;
     gravar(e.cenario.congelaEm + e.tc, 'consequencia');
+    // Um golo disparado neste passo (mesmo no fim) ainda ganha o tempo de festejo.
+    const fim = k.duracao + (e.golo ? TEMPO_FESTEJO : 0);
     if (e.tc >= fim) {
       e.fase = 'fim';
       if (e.callbacks.aoTerminar) e.callbacks.aoTerminar(e.frames);
@@ -305,6 +309,7 @@ export function criarMotor(canvas, { modelo = null, som = null, giroscopio = nul
       olhar.reiniciar();
       olhar.ativo = true;
       bola.reiniciar();
+      torcida.reiniciar();
       const eventos = ordenar(cenario.eventos);
       estado = {
         fase: 'lance', cenario, variante: cenario.variantes[varianteId], traj, callbacks,
@@ -343,6 +348,7 @@ export function criarMotor(canvas, { modelo = null, som = null, giroscopio = nul
       estado = null;
       olhar.ativo = false;
       som?.pararAmbiente();
+      torcida.reiniciar();
       limparBonecos();
     },
   };
