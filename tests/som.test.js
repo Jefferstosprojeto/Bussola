@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { criarSom, SONS } from '../jogo/som.js';
 
 function contextoFalso() {
-  const registo = { iniciados: [], parados: 0, retomado: 0, ganhos: [] };
+  const registo = { iniciados: [], parados: 0, retomado: 0, suspenso: 0, ganhos: [] };
   class Ctx {
     constructor() { this.state = 'suspended'; this.destination = {}; }
     createGain() {
@@ -21,6 +21,7 @@ function contextoFalso() {
     }
     decodeAudioData(dados, ok) { ok({ duracao: 1, dados }); }
     resume() { registo.retomado++; this.state = 'running'; return Promise.resolve(); }
+    suspend() { registo.suspenso++; this.state = 'suspended'; return Promise.resolve(); }
   }
   return { Ctx, registo };
 }
@@ -106,4 +107,29 @@ test('definirLigado muda o volume mestre entre 0 e 1', async () => {
   s.definirLigado(true);
   assert.equal(mestre.gain.value, 1);
   assert.equal(s.ligado, true);
+});
+
+test('suspender e retomar: param e voltam o contexto, sem erro quando não há contexto', async () => {
+  const semCtx = criarSom({ janela: {}, buscar: async () => resposta() });
+  assert.doesNotThrow(() => { semCtx.suspender(); semCtx.retomar(); });
+
+  const { Ctx, registo } = contextoFalso();
+  const s = criarSom({ janela: { AudioContext: Ctx }, buscar: async () => resposta() });
+  // Antes de haver contexto, nada acontece.
+  s.suspender();
+  s.retomar();
+  assert.equal(registo.suspenso, 0);
+  assert.equal(registo.retomado, 0);
+  await s.carregar();
+  // Contexto à espera do primeiro gesto: retomar não o acorda.
+  s.retomar();
+  assert.equal(registo.retomado, 0);
+  s.desbloquear();
+  assert.equal(registo.retomado, 1);
+  s.suspender();
+  assert.equal(registo.suspenso, 1);
+  s.suspender(); // já suspenso: não repete
+  assert.equal(registo.suspenso, 1);
+  s.retomar();
+  assert.equal(registo.retomado, 2);
 });

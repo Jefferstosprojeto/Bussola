@@ -7,12 +7,13 @@ import { criarGiroscopio } from './giroscopio.js';
 import { criarSom } from './som.js';
 import {
   calcularEstrelas, criarArmazem, criarContadorScans, criarPreferencias, estaDesbloqueado,
-  posicaoEm, sortearVariante, trajetoriasDaVariante, CHAVE_GIROSCOPIO, CHAVE_SOM, JANELA_SCAN,
+  comLimite, posicaoEm, sortearVariante, trajetoriasDaVariante, CHAVE_GIROSCOPIO, CHAVE_SOM, JANELA_SCAN,
 } from './regras.js';
 
 const $ = (id) => document.getElementById(id);
 const ECRAS = ['menu', 'pergunta', 'decisao', 'resultado', 'repeticao', 'erro'];
 const NS = 'http://www.w3.org/2000/svg';
+const LIMITE_SOM_MS = 8000;
 const params = new URLSearchParams(location.search);
 
 function armazenamentoSeguro() {
@@ -109,8 +110,12 @@ function prepararDefinicoes() {
     atualizarGiro();
   }
   // O iPhone só deixa tocar som depois de um gesto do utilizador.
+  // No iOS um pointerdown de toque não conta como gesto: ouve-se também o fim do toque e o clique.
+  // Pode correr muitas vezes: desbloquear só retoma o som se estiver suspenso.
   const desbloquear = () => som.desbloquear();
-  document.addEventListener('pointerdown', desbloquear, { capture: true, passive: true });
+  for (const tipo of ['pointerdown', 'pointerup', 'touchend', 'click']) {
+    document.addEventListener(tipo, desbloquear, { capture: true, passive: true });
+  }
   document.addEventListener('keydown', desbloquear, { capture: true });
 }
 
@@ -404,11 +409,16 @@ async function arrancar() {
   giroscopio = criarGiroscopio();
   let pModelo = 0;
   let pSom = 0;
-  const progresso = () => mostrarProgresso(pModelo * 0.8 + pSom * 0.2);
+  let carregado = false;
+  // Depois do menu desenhado a barra já não existe: os avisos que cheguem tarde são ignorados.
+  const progresso = () => { if (!carregado) mostrarProgresso(pModelo * 0.8 + pSom * 0.2); };
   const [modelo] = await Promise.all([
-    carregarModelo((f) => { pModelo = f; progresso(); }),
-    som.carregar((f) => { pSom = f; progresso(); }),
+    carregarModelo((f) => { pModelo = Math.max(pModelo, f); progresso(); }),
+    // Os sons são opcionais: no máximo LIMITE_SOM_MS à espera. Os que chegarem depois ainda tocam.
+    comLimite(som.carregar((f) => { pSom = Math.max(pSom, f); progresso(); }), LIMITE_SOM_MS)
+      .then(() => { pSom = 1; progresso(); }),
   ]);
+  carregado = true;
   try {
     motor = criarMotor($('cena'), { modelo, som, giroscopio });
   } catch {

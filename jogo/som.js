@@ -19,6 +19,7 @@ export function criarSom({ ligado = true, janela = globalThis, buscar = (url) =>
   let mestre = null;
   let estaLigado = ligado;
   let ambiente = false;
+  let suspensoAqui = false;
 
   function contexto() {
     if (ctx || !Contexto) return ctx;
@@ -71,6 +72,27 @@ export function criarSom({ ligado = true, janela = globalThis, buscar = (url) =>
       const c = contexto();
       // O Safari pode dizer 'interrupted' em vez de 'suspended'.
       if (c && (c.state === 'suspended' || c.state === 'interrupted')) c.resume().catch(() => {});
+    },
+    // Separador escondido: o som pára e o telemóvel poupa bateria. Sem contexto, não faz nada.
+    suspender() {
+      try {
+        if (ctx && ctx.state === 'running') {
+          suspensoAqui = true;
+          ctx.suspend().catch(() => {});
+        }
+      } catch {
+        // Sem som não há erro.
+      }
+    },
+    // Só retoma o que suspender parou: um contexto ainda à espera do primeiro gesto fica como está.
+    retomar() {
+      if (!suspensoAqui) return;
+      suspensoAqui = false;
+      try {
+        if (ctx && ctx.state !== 'running' && ctx.state !== 'closed') ctx.resume().catch(() => {});
+      } catch {
+        // Sem som não há erro.
+      }
     },
     tocar(nome) {
       try {
